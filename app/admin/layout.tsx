@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Package, ShoppingBag, ChefHat } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, ChefHat, FolderHeart, Ticket, BarChart3 } from "lucide-react";
 import type { ReactNode } from "react";
 import AdminLogoutButton from "@/components/admin/logout-button";
 
@@ -15,7 +15,10 @@ export const metadata = {
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Produk", icon: Package },
+  { href: "/admin/categories", label: "Kategori", icon: FolderHeart },
   { href: "/admin/orders", label: "Pesanan", icon: ShoppingBag },
+  { href: "/admin/vouchers", label: "Voucher", icon: Ticket },
+  { href: "/admin/reports", label: "Laporan", icon: BarChart3 },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

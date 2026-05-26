@@ -3,14 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import ProductCard from "@/components/product-card";
 import { ProductSkeletonGrid } from "@/components/product-skeleton";
 import CategoryFilter from "@/components/category-filter";
+import ProductSearch from "@/components/product-search";
 import NavbarCart from "@/components/navbar-cart";
-import type { Product } from "@/types";
+import type { Product, Category } from "@/types";
 import { ChefHat, Sparkles, Star, Truck } from "lucide-react";
 
 // ─── Product Grid (async Server Component) ────────────────────────────────────
 // Separated so it can be wrapped in <Suspense> for streaming skeleton support.
 
-async function ProductGrid({ category }: { category: string }) {
+async function ProductGrid({ category, search }: { category: string; search: string }) {
   const supabase = await createClient();
 
   // Build query — filter by category if provided
@@ -21,6 +22,10 @@ async function ProductGrid({ category }: { category: string }) {
 
   if (category) {
     query = query.eq("category", category);
+  }
+
+  if (search) {
+    query = query.ilike("name", `%${search}%`);
   }
 
   const { data: products, error } = await query;
@@ -53,10 +58,39 @@ async function ProductGrid({ category }: { category: string }) {
     );
   }
 
+  // Fetch reviews to calculate average ratings
+  const { data: reviews } = await supabase
+    .from("reviews")
+    .select("product_id, rating");
+
+  const ratingMap: Record<string, { avg: number; count: number }> = {};
+  if (reviews) {
+    reviews.forEach((r) => {
+      if (!ratingMap[r.product_id]) {
+        ratingMap[r.product_id] = { sum: 0, count: 0 } as any;
+      }
+      const entry = ratingMap[r.product_id] as any;
+      entry.sum += r.rating;
+      entry.count += 1;
+    });
+    Object.keys(ratingMap).forEach((prodId) => {
+      const entry = ratingMap[prodId] as any;
+      ratingMap[prodId] = {
+        avg: parseFloat((entry.sum / entry.count).toFixed(1)),
+        count: entry.count,
+      };
+    });
+  }
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
       {productList.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard
+          key={product.id}
+          product={product}
+          rating={ratingMap[product.id]?.avg ?? null}
+          reviewsCount={ratingMap[product.id]?.count ?? 0}
+        />
       ))}
     </div>
   );
@@ -65,12 +99,22 @@ async function ProductGrid({ category }: { category: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 interface HomePageProps {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; search?: string }>;
 }
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const activeCategory = params.category ?? "";
+  const searchQuery = params.search ?? "";
+
+  const supabase = await createClient();
+  const { data: categoriesData } = await supabase
+    .from("categories")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  const categories = (categoriesData ?? []) as Category[];
 
   return (
     <div className="min-h-screen">
@@ -161,26 +205,31 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       {/* ─── Catalog Section ────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         {/* Section header */}
-        <div className="mb-8">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-text-main mb-1">
-            Menu Kami
-          </h2>
-          <p className="text-text-muted text-sm">Temukan dimsum favorit kamu</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-text-main mb-1">
+              Menu Kami
+            </h2>
+            <p className="text-text-muted text-sm">Temukan dimsum favorit kamu</p>
+          </div>
+          <Suspense fallback={<div className="w-full max-w-md h-12 bg-gray-100 animate-pulse rounded-2xl" />}>
+            <ProductSearch />
+          </Suspense>
         </div>
 
         {/* Category filter — client component */}
         <div className="mb-8">
           <Suspense fallback={<div className="h-10" />}>
-            <CategoryFilter />
+            <CategoryFilter categories={categories} />
           </Suspense>
         </div>
 
         {/* Product grid — wrapped in Suspense for streaming */}
         <Suspense
-          key={activeCategory} // Re-mount on category change to show skeleton
+          key={activeCategory + "_" + searchQuery} // Re-mount on category or search change
           fallback={<ProductSkeletonGrid count={8} />}
         >
-          <ProductGrid category={activeCategory} />
+          <ProductGrid category={activeCategory} search={searchQuery} />
         </Suspense>
       </section>
 

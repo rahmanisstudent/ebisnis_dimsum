@@ -5,6 +5,7 @@ import { Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice, cn } from "@/lib/utils";
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/constants";
+import Link from "next/link";
 import type { Order } from "@/types";
 
 type FilterStatus = "all" | Order["status"];
@@ -124,9 +125,9 @@ export default function AdminOrdersPage() {
               >
                 {/* Order ID */}
                 <div>
-                  <p className="text-white font-mono text-sm font-semibold">
+                  <Link href={`/admin/orders/${order.id}`} className="text-white hover:text-emerald-400 font-mono text-sm font-semibold transition-colors">
                     #{order.id.slice(0, 8).toUpperCase()}
-                  </p>
+                  </Link>
                   {order.midtrans_order_id && (
                     <p className="text-gray-600 text-xs truncate">
                       {order.midtrans_order_id}

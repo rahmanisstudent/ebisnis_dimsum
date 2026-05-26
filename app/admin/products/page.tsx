@@ -5,8 +5,8 @@ import Image from "next/image";
 import { Plus, Pencil, Trash2, Loader2, X, Upload, AlertCircle, Package, Layers, Tag, Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice, getProductImageUrl } from "@/lib/utils";
-import { CATEGORIES } from "@/lib/constants";
 import type { Product } from "@/types";
+import ProductVariantsModal from "@/components/admin/product-variants-modal";
 
 // ── Product Form Modal ─────────────────────────────────────────────────────
 
@@ -36,6 +36,24 @@ function ProductFormModal({ product, onClose, onSaved }: ProductFormProps) {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name")
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+      if (data) {
+        setCategories(data);
+        if (!product && data.length > 0) {
+          setForm((prev) => ({ ...prev, category: data[0].name }));
+        }
+      }
+    }
+    loadCategories();
+  }, [supabase, product]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -148,8 +166,8 @@ function ProductFormModal({ product, onClose, onSaved }: ProductFormProps) {
             <div>
               <label htmlFor="category" className={labelClass}><Layers size={12}/> Kategori</label>
               <select id="category" name="category" value={form.category} onChange={handleChange} className={inputClass}>
-                {CATEGORIES.filter((c) => c.value !== "").map((c) => (
-                  <option key={c.value} value={c.value} className="bg-gray-900">{c.value}</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name} className="bg-gray-900">{c.name}</option>
                 ))}
               </select>
             </div>
@@ -188,6 +206,7 @@ export default function AdminProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [variantProduct, setVariantProduct] = useState<Product | null>(null);
   const supabase = createClient();
 
   const fetchProducts = useCallback(async () => {
@@ -273,10 +292,13 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2 border-t border-gray-800 pt-3 md:pt-0 md:border-0">
-                  <button onClick={() => { setEditingProduct(product); setShowForm(true); }} className="p-2.5 bg-blue-500/5 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl transition-all">
+                  <button onClick={() => setVariantProduct(product)} className="p-2.5 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-xl transition-all" title="Varian">
+                    <Layers size={16} />
+                  </button>
+                  <button onClick={() => { setEditingProduct(product); setShowForm(true); }} className="p-2.5 bg-blue-500/5 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl transition-all" title="Edit">
                     <Pencil size={16} />
                   </button>
-                  <button onClick={() => handleDelete(product.id)} disabled={deletingId === product.id} className="p-2.5 bg-red-500/5 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all disabled:opacity-30">
+                  <button onClick={() => handleDelete(product.id)} disabled={deletingId === product.id} className="p-2.5 bg-red-500/5 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all disabled:opacity-30" title="Hapus">
                     {deletingId === product.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                   </button>
                 </div>
@@ -291,6 +313,13 @@ export default function AdminProductsPage() {
           product={editingProduct}
           onClose={() => { setShowForm(false); setEditingProduct(null); }}
           onSaved={() => { setShowForm(false); setEditingProduct(null); fetchProducts(); }}
+        />
+      )}
+
+      {variantProduct && (
+        <ProductVariantsModal
+          product={variantProduct}
+          onClose={() => setVariantProduct(null)}
         />
       )}
     </div>

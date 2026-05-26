@@ -9,17 +9,7 @@ import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
  *
  * Receives Midtrans HTTP notification (server-to-server).
  * Verifies the signature_key, then updates the order status.
- *
- * Midtrans status → orders.status mapping:
- *  settlement  → paid
- *  capture     → paid  (credit card)
- *  cancel      → cancelled
- *  deny        → cancelled
- *  expire      → expired
- *  pending     → pending  (no change needed)
- *
- * IMPORTANT: Set this URL in your Midtrans dashboard under
- * Settings → Configuration → Payment Notification URL
+ * S02: Auto-reduces stock on payment, restores on cancel/expire.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -83,6 +73,15 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // Get current order status before updating
+    const { data: currentOrder } = await supabaseAdmin
+      .from("orders")
+      .select("status")
+      .eq("midtrans_order_id", midtransOrderId)
+      .single();
+
+    const previousStatus = currentOrder?.status;
+
     const { error } = await supabaseAdmin
       .from("orders")
       .update({ status: appStatus })
@@ -91,6 +90,109 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Failed to update order status:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // ── 4. S02: Auto-reduce / restore stock ─────────────────────────────────
+    // Only process stock changes when status actually changes
+    if (previousStatus !== appStatus) {
+      // Get order items for this order
+      const { data: order } = await supabaseAdmin
+        .from("orders")
+        .select("id")
+        .eq("midtrans_order_id", midtransOrderId)
+        .single();
+
+      if (order) {
+        const { data: orderItems } = await supabaseAdmin
+          .from("order_items")
+          .select("product_id, quantity, variant_id")
+          .eq("order_id", order.id);
+
+        if (orderItems && orderItems.length > 0) {
+          // Reduce stock when payment is confirmed
+          if (appStatus === "paid" && previousStatus !== "paid") {
+            for (const item of orderItems) {
+              if (item.variant_id) {
+                // If variant exists, decrement variant stock
+                const { data: variant } = await supabaseAdmin
+                  .from("product_variants")
+                  .select("stock")
+                  .eq("id", item.variant_id)
+                  .single();
+
+                if (variant) {
+                  const newStock = Math.max(0, variant.stock - item.quantity);
+                  await supabaseAdmin
+                    .from("product_variants")
+                    .update({ stock: newStock })
+                    .eq("id", item.variant_id);
+                }
+              } else {
+                // Standard product stock
+                await supabaseAdmin.rpc("decrement_stock", {
+                  p_product_id: item.product_id,
+                  p_quantity: item.quantity,
+                }).then(({ error: rpcError }) => {
+                  if (rpcError) {
+                    return supabaseAdmin
+                      .from("products")
+                      .select("stock")
+                      .eq("id", item.product_id)
+                      .single()
+                      .then(({ data: product }) => {
+                        if (product) {
+                          const newStock = Math.max(0, product.stock - item.quantity);
+                          return supabaseAdmin
+                            .from("products")
+                            .update({ stock: newStock })
+                            .eq("id", item.product_id);
+                        }
+                      });
+                  }
+                });
+              }
+            }
+            console.log(`[Stock] Reduced stock for order ${midtransOrderId}`);
+          }
+
+          // Restore stock when order is cancelled or expired
+          if (
+            (appStatus === "cancelled" || appStatus === "expired") &&
+            previousStatus === "paid"
+          ) {
+            for (const item of orderItems) {
+              if (item.variant_id) {
+                const { data: variant } = await supabaseAdmin
+                  .from("product_variants")
+                  .select("stock")
+                  .eq("id", item.variant_id)
+                  .single();
+
+                if (variant) {
+                  await supabaseAdmin
+                    .from("product_variants")
+                    .update({ stock: variant.stock + item.quantity })
+                    .eq("id", item.variant_id);
+                }
+              } else {
+                const { data: product } = await supabaseAdmin
+                  .from("products")
+                  .select("stock")
+                  .eq("id", item.product_id)
+                  .single();
+
+                if (product) {
+                  await supabaseAdmin
+                    .from("products")
+                    .update({ stock: product.stock + item.quantity })
+                    .eq("id", item.product_id);
+                }
+              }
+            }
+            console.log(`[Stock] Restored stock for order ${midtransOrderId}`);
+          }
+        }
+      }
     }
 
     console.log(

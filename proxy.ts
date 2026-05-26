@@ -3,13 +3,7 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 /**
- * proxy.ts — Next.js 16 route protection.
- *
- * 1. Refresh Supabase session on every request (cookie rotation)
- * 2. /cart, /checkout, /orders → require authenticated user
- * 3. /admin/**                 → require role='admin'
- * 4. /login, /register         → redirect logged-in users:
- *                                  admin → /admin  |  customer → /
+ * middleware.ts — Next.js Route Protection and Cookie Rotation.
  */
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -24,26 +18,26 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
-  // IMPORTANT: refresh session — must be called on every request
+  // refresh session — must be called on every request
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
 
-  // ── 1. Protected customer routes ────────────────────────────────────────
-  const customerRoutes = ["/cart", "/checkout", "/orders"];
+  // ── 1. Protected customer routes (added /profile) ────────────────────────
+  const customerRoutes = ["/cart", "/checkout", "/orders", "/profile"];
   if (!user && customerRoutes.some((r) => pathname.startsWith(r))) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectedFrom", pathname);

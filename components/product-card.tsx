@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Package } from "lucide-react";
+import { ShoppingCart, Package, Star } from "lucide-react";
 import type { Product } from "@/types";
 import { formatPrice, getProductImageUrl } from "@/lib/utils";
 import SpicyIndicator from "./spicy-indicator";
@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product;
+  rating?: number | null;
+  reviewsCount?: number;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, rating, reviewsCount = 0 }: ProductCardProps) {
   const isOutOfStock = product.stock === 0;
   const imageUrl = getProductImageUrl(product.image_url);
 
@@ -53,8 +55,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.name}
         </h3>
 
-        {/* Spicy level */}
-        <SpicyIndicator level={product.spicy_level} />
+        {/* Spicy level & Rating */}
+        <div className="flex items-center justify-between gap-2">
+          <SpicyIndicator level={product.spicy_level} />
+          {rating && (
+            <div className="flex items-center gap-0.5 text-amber-500 text-xs font-bold">
+              <Star size={11} fill="currentColor" />
+              <span>{rating}</span>
+              <span className="text-[#8A857E] font-medium text-[9px]">({reviewsCount})</span>
+            </div>
+          )}
+        </div>
 
         {/* Stock indicator */}
         <div className="flex items-center gap-1.5 text-xs mt-auto" style={{ color: '#8A857E' }}>

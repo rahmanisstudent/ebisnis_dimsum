@@ -186,7 +186,13 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-text-muted mt-6">
+          <div className="text-center mt-4">
+            <Link href="/reset-password" className="text-sm text-text-muted hover:text-primary transition-colors">
+              Lupa password?
+            </Link>
+          </div>
+
+          <p className="text-center text-sm text-text-muted mt-4">
             Belum punya akun?{" "}
             <Link href="/register" className="text-primary font-bold hover:underline">
               Daftar sekarang

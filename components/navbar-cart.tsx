@@ -2,89 +2,108 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
-import NavbarAuth from "@/components/navbar-auth";
+import { ShoppingCart, LogOut, User as UserIcon, LogIn } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 /**
- * Client Component — works in both Server and Client Component trees.
- * Fetches cart count using the browser Supabase client (no next/headers).
- * Updates automatically after router.refresh().
+ * S04: Combined Navbar component that shows cart badge + auth state.
+ * Replaces separate navbar-cart and integrates navbar-auth.
  */
 export default function NavbarCart() {
+  const [user, setUser] = useState<any>(null);
   const [cartCount, setCartCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
-    let isMounted = true;
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
 
-    async function fetchCount() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      if (user) {
+        const { data: cart } = await supabase
+          .from("carts")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
 
-      if (!user) {
-        if (isMounted) setCartCount(0);
-        return;
+        if (cart) {
+          const { count } = await supabase
+            .from("cart_items")
+            .select("*", { count: "exact", head: true })
+            .eq("cart_id", cart.id);
+          setCartCount(count ?? 0);
+        }
       }
-
-      const { data: cart } = await supabase
-        .from("carts")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!cart) {
-        if (isMounted) setCartCount(0);
-        return;
-      }
-
-      const { data: items } = await supabase
-        .from("cart_items")
-        .select("quantity")
-        .eq("cart_id", cart.id);
-
-      const total =
-        items?.reduce((sum, item) => sum + (item.quantity ?? 0), 0) ?? 0;
-
-      if (isMounted) setCartCount(total);
+      setLoading(false);
     }
 
-    fetchCount();
+    init();
 
-    // Re-fetch whenever auth state changes (login/logout)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      fetchCount();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (!session?.user) {
+        setCartCount(0);
+      }
     });
 
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [supabase]);
 
-  return (
-    <div className="flex items-center gap-4">
-      <NavbarAuth />
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
+  if (loading) {
+    return <div className="w-24 h-8 animate-pulse rounded-lg bg-border-soft" />;
+  }
+
+  if (!user) {
+    return (
+      <Link
+        href="/login"
+        className="flex items-center gap-2 text-sm font-semibold text-text-muted hover:text-primary transition-colors duration-200"
+      >
+        <LogIn size={16} />
+        Masuk
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      {/* User info (desktop) */}
+      <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-text-muted">
+        <UserIcon size={14} className="text-primary/60" />
+        <span className="truncate max-w-[100px]">{user.email?.split("@")[0]}</span>
+      </div>
+
+      {/* Cart link */}
       <Link
         href="/cart"
-        className="btn-primary relative flex items-center gap-2 text-sm !py-2.5 !px-5 !rounded-2xl"
+        className="relative flex items-center gap-1.5 text-text-muted hover:text-primary transition-colors duration-200 p-1.5"
       >
-        <ShoppingBag size={16} />
-        <span className="hidden sm:inline">Keranjang</span>
-
+        <ShoppingCart size={20} />
         {cartCount > 0 && (
-          <span
-            className="absolute -top-2 -right-2 min-w-[22px] h-[22px] text-white text-[10px] font-black rounded-full flex items-center justify-center px-1"
-            style={{ backgroundColor: '#E8773A', boxShadow: '0 2px 6px rgba(232,119,58,0.4)' }}
-          >
-            {cartCount > 99 ? "99+" : cartCount}
+          <span className="absolute -top-1 -right-1 bg-accent text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+            {cartCount > 9 ? "9+" : cartCount}
           </span>
         )}
       </Link>
+
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-1.5 text-text-muted hover:text-red-500 transition-colors duration-200 text-sm font-medium p-1.5"
+        title="Keluar"
+      >
+        <LogOut size={16} />
+        <span className="hidden sm:inline">Keluar</span>
+      </button>
     </div>
   );
 }

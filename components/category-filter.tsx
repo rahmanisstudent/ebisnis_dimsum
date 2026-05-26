@@ -1,13 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { CATEGORIES } from "@/lib/constants";
+import type { Category } from "@/types";
 
-/**
- * Category filter tabs. Updates the `?category=` URL search param
- * so the Server Component re-fetches with the correct filter.
- */
-export default function CategoryFilter() {
+interface CategoryFilterProps {
+  categories: Category[];
+}
+
+export default function CategoryFilter({ categories }: CategoryFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -26,17 +26,29 @@ export default function CategoryFilter() {
 
   return (
     <div className="flex flex-wrap gap-2.5 rounded-2xl p-3" style={{ backgroundColor: 'rgba(255,255,255,0.85)', border: '1px solid #EDE8E3' }}>
-      {CATEGORIES.map((cat) => (
+      {/* "Semua" filter button */}
+      <button
+        onClick={() => handleSelect("")}
+        className={
+          activeCategory === ""
+            ? "category-pill category-pill-active"
+            : "category-pill"
+        }
+      >
+        🥟 Semua
+      </button>
+
+      {categories.map((cat) => (
         <button
-          key={cat.value}
-          onClick={() => handleSelect(cat.value)}
+          key={cat.id}
+          onClick={() => handleSelect(cat.name)}
           className={
-            activeCategory === cat.value
+            activeCategory === cat.name
               ? "category-pill category-pill-active"
               : "category-pill"
           }
         >
-          {cat.label}
+          {cat.emoji ? `${cat.emoji} ${cat.name}` : cat.name}
         </button>
       ))}
     </div>

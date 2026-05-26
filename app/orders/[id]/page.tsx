@@ -7,6 +7,7 @@ import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/constants";
 import type { OrderWithItems } from "@/types";
 import { ArrowLeft, Package } from "lucide-react";
 import NavbarCart from "@/components/navbar-cart";
+import OrderItemReview from "@/components/order-item-review";
 
 interface OrderDetailPageProps {
   params: Promise<{ id: string }>;
@@ -69,8 +70,22 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-text-main text-sm">{item.product?.name ?? "Produk"}</p>
+                  <p className="font-semibold text-text-main text-sm">
+                    {item.product?.name ?? "Produk"}
+                    {item.variant_name && (
+                      <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-primary-light text-primary-dark border border-primary/20">
+                        {item.variant_name}
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-text-muted">{item.quantity} x {formatPrice(item.price)}</p>
+                  {o.status === "selesai" && item.product_id && (
+                    <OrderItemReview
+                      productId={item.product_id}
+                      userId={user.id}
+                      orderId={o.id}
+                    />
+                  )}
                 </div>
                 <span className="font-bold text-text-main text-sm">{formatPrice(item.price * item.quantity)}</span>
               </div>

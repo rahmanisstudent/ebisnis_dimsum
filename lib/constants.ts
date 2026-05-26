@@ -1,6 +1,6 @@
-import type { CategoryOption } from "@/types";
+import type { Product, CategoryOption } from "@/types";
 
-/** Product categories used for the filter tabs on the catalog page */
+/** Product categories — now just the fallback; prefer DB-driven categories */
 export const CATEGORIES: CategoryOption[] = [
   { label: "Semua", value: "" },
   { label: "🥟 Kukus", value: "Kukus" },
@@ -26,3 +26,15 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-50 text-red-600",
   expired: "bg-gray-100 text-gray-500",
 };
+
+/** Store location (Yogyakarta) for shipping calculation */
+export const STORE_LOCATION = {
+  latitude: -7.7956,
+  longitude: 110.3695,
+  address: "Yogyakarta",
+};
+
+/** Shipping rate per km in IDR */
+export const SHIPPING_RATE_PER_KM = 2500;
+export const SHIPPING_MIN_COST = 8000;
+export const SHIPPING_MAX_COST = 50000;

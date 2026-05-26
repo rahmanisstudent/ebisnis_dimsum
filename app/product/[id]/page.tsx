@@ -4,7 +4,7 @@ import type { Product } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Package, Tag, ChefHat } from "lucide-react";
+import { ArrowLeft, Package, Tag, ChefHat, Star, MessageSquare } from "lucide-react";
 import SpicyIndicator from "@/components/spicy-indicator";
 import AddToCartButton from "@/components/add-to-cart-button";
 import NavbarCart from "@/components/navbar-cart";
@@ -41,6 +41,17 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     .single();
 
   if (error || !product) notFound();
+
+  const { data: reviewsData } = await supabase
+    .from("reviews")
+    .select("*, user:user_profiles(full_name)")
+    .eq("product_id", id)
+    .order("created_at", { ascending: false });
+
+  const reviews = (reviewsData as any[]) ?? [];
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : null;
 
   const p = product as Product;
   const imageUrl = getProductImageUrl(p.image_url);
@@ -87,9 +98,18 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
             <div className="flex flex-col p-6 md:p-10 gap-5">
               <h1 className="text-2xl md:text-3xl font-extrabold text-text-main leading-tight">{p.name}</h1>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-text-muted font-medium">Tingkat Pedas:</span>
-                <SpicyIndicator level={p.spicy_level} />
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-text-muted font-medium">Pedas:</span>
+                  <SpicyIndicator level={p.spicy_level} />
+                </div>
+                {avgRating && (
+                  <div className="flex items-center gap-1.5 text-amber-500 border-l border-border-soft pl-4">
+                    <Star size={15} fill="currentColor" />
+                    <span className="text-sm font-bold text-text-main">{avgRating}</span>
+                    <span className="text-xs text-text-muted">({reviews.length} ulasan)</span>
+                  </div>
+                )}
               </div>
               <p className="text-text-muted leading-relaxed text-sm md:text-base">{p.description || "Tidak ada deskripsi produk."}</p>
               <div className={cn("flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-2xl w-fit", isOutOfStock ? "bg-red-50 text-red-600" : "bg-primary-light text-primary")}>
@@ -107,6 +127,50 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Customer Reviews Section */}
+        <div className="mt-8 bg-white rounded-3xl p-6 md:p-8 border border-border-soft">
+          <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-border-soft">
+            <MessageSquare className="text-primary" size={20} />
+            <h2 className="text-lg font-black text-text-main">Ulasan Pelanggan ({reviews.length})</h2>
+          </div>
+
+          {reviews.length === 0 ? (
+            <p className="text-sm text-text-muted text-center py-8">Belum ada ulasan untuk produk ini.</p>
+          ) : (
+            <div className="flex flex-col gap-6">
+              {reviews.map((r) => (
+                <div key={r.id} className="flex flex-col gap-2 pb-5 border-b border-border-soft/60 last:border-0 last:pb-0">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-bold text-sm text-text-main">
+                        {r.user?.full_name || "Pelanggan Tanpa Nama"}
+                      </p>
+                      <div className="flex items-center gap-0.5 text-amber-400 mt-0.5">
+                        {[...Array(5)].map((_, idx) => (
+                          <Star
+                            key={idx}
+                            size={12}
+                            fill={idx < r.rating ? "currentColor" : "none"}
+                            className={idx < r.rating ? "" : "text-gray-200"}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-text-muted font-medium">
+                      {new Date(r.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                    </span>
+                  </div>
+                  {r.comment && (
+                    <p className="text-xs text-text-main leading-relaxed mt-1 font-medium bg-cream/20 px-3 py-2 rounded-xl border border-border-soft/40 italic">
+                      "{r.comment}"
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 

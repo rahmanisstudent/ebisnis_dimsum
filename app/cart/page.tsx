@@ -31,7 +31,11 @@ export default function CartPage() {
     const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).single();
     if (!cart) { setLoading(false); return; }
 
-    const { data } = await supabase.from("cart_items").select("*, product:products(*)").eq("cart_id", cart.id).order("created_at", { ascending: true });
+    const { data } = await supabase
+      .from("cart_items")
+      .select("*, product:products(*), variant:product_variants(*)")
+      .eq("cart_id", cart.id)
+      .order("created_at", { ascending: true });
 
     const fetched = (data as CartItemWithProduct[]) ?? [];
     setItems(fetched);
@@ -73,7 +77,10 @@ export default function CartPage() {
   }
 
   const selectedItems = items.filter((i) => selectedIds.has(i.id));
-  const subtotal = selectedItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const subtotal = selectedItems.reduce((sum, item) => {
+    const itemPrice = item.product.price + (item.variant?.price_adjustment ?? 0);
+    return sum + itemPrice * item.quantity;
+  }, 0);
   const shipping = subtotal > 0 ? 15000 : 0;
   const total = subtotal + shipping;
 
@@ -135,7 +142,9 @@ export default function CartPage() {
               {items.map((item) => {
                 const isUpdating = updatingId === item.id;
                 const isSelected = selectedIds.has(item.id);
-                const maxQty = Math.min(item.product.stock, 10);
+                const activeStock = item.variant ? item.variant.stock : item.product.stock;
+                const maxQty = Math.min(activeStock, 10);
+                const activePrice = item.product.price + (item.variant?.price_adjustment ?? 0);
 
                 return (
                   <div key={item.id} className={cn("surface-card p-4 flex gap-3 transition-all duration-200", isSelected ? "border-primary/30 shadow-sm" : "border-border-soft opacity-60", isUpdating && "opacity-50")}>
@@ -150,7 +159,14 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-bold text-text-main text-sm leading-snug line-clamp-2">{item.product.name}</h3>
+                          <h3 className="font-bold text-text-main text-sm leading-snug line-clamp-2">
+                            {item.product.name}
+                            {item.variant && (
+                              <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-primary-light text-primary-dark border border-primary/20">
+                                {item.variant.name}
+                              </span>
+                            )}
+                          </h3>
                           <span className="text-xs text-text-muted mt-0.5 block">{item.product.category}</span>
                         </div>
                         <button onClick={() => removeItem(item.id)} disabled={isUpdating} className="text-border-soft hover:text-red-500 transition-colors duration-200 shrink-0 p-1" aria-label="Hapus">
@@ -159,7 +175,7 @@ export default function CartPage() {
                       </div>
 
                       <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center border border-border-soft rounded-2xl overflow-hidden">
+                        <div className="flex items-center border border-border-soft rounded-2xl overflow-hidden bg-white">
                           <button onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1 || isUpdating} className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200">
                             <Minus size={13} />
                           </button>
@@ -168,7 +184,7 @@ export default function CartPage() {
                             <Plus size={13} />
                           </button>
                         </div>
-                        <span className="font-extrabold text-accent text-sm">{formatPrice(item.product.price * item.quantity)}</span>
+                        <span className="font-extrabold text-accent text-sm">{formatPrice(activePrice * item.quantity)}</span>
                       </div>
                     </div>
                   </div>
