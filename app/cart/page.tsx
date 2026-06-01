@@ -31,9 +31,10 @@ export default function CartPage() {
     const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).single();
     if (!cart) { setLoading(false); return; }
 
+    // VARIANT DIHAPUS: Query dialihkan hanya fokus mengambil data relasi produk
     const { data } = await supabase
       .from("cart_items")
-      .select("*, product:products(*), variant:product_variants(*)")
+      .select("*, product:products(*)")
       .eq("cart_id", cart.id)
       .order("created_at", { ascending: true });
 
@@ -78,8 +79,8 @@ export default function CartPage() {
 
   const selectedItems = items.filter((i) => selectedIds.has(i.id));
   const subtotal = selectedItems.reduce((sum, item) => {
-    const itemPrice = item.product.price + (item.variant?.price_adjustment ?? 0);
-    return sum + itemPrice * item.quantity;
+    // VARIANT DIHAPUS: Menghitung murni dari harga produk utama
+    return sum + item.product.price * item.quantity;
   }, 0);
   const shipping = subtotal > 0 ? 15000 : 0;
   const total = subtotal + shipping;
@@ -142,9 +143,9 @@ export default function CartPage() {
               {items.map((item) => {
                 const isUpdating = updatingId === item.id;
                 const isSelected = selectedIds.has(item.id);
-                const activeStock = item.variant ? item.variant.stock : item.product.stock;
-                const maxQty = Math.min(activeStock, 10);
-                const activePrice = item.product.price + (item.variant?.price_adjustment ?? 0);
+                // VARIANT DIHAPUS: Stok dan harga sepenuhnya mengacu ke produk utama
+                const maxQty = Math.min(item.product.stock, 10);
+                const activePrice = item.product.price;
 
                 return (
                   <div key={item.id} className={cn("surface-card p-4 flex gap-3 transition-all duration-200", isSelected ? "border-primary/30 shadow-sm" : "border-border-soft opacity-60", isUpdating && "opacity-50")}>
@@ -161,11 +162,6 @@ export default function CartPage() {
                         <div>
                           <h3 className="font-bold text-text-main text-sm leading-snug line-clamp-2">
                             {item.product.name}
-                            {item.variant && (
-                              <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-primary-light text-primary-dark border border-primary/20">
-                                {item.variant.name}
-                              </span>
-                            )}
                           </h3>
                           <span className="text-xs text-text-muted mt-0.5 block">{item.product.category}</span>
                         </div>
