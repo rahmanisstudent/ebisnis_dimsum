@@ -92,23 +92,52 @@ function CheckoutContent() {
       return;
     }
 
+    // Step 1: Fetch cart_items + products (tanpa variant join - hindari schema cache issue)
     let query = supabase
       .from("cart_items")
-      .select("*, product:products(*), variant:product_variants(*)")
+      .select("*, product:products(*)")
       .eq("cart_id", cart.id);
 
-    // Filter hanya item yang dipilih dari keranjang
     if (selectedItemIds.length > 0) {
       query = query.in("id", selectedItemIds);
     }
 
-    const { data, error } = await query;
+    const { data: rawItems, error } = await query;
 
     if (error) {
       console.error("[Checkout] Fetch error:", error.message);
+      setLoading(false);
+      return;
     }
 
-    setItems((data as CartItemWithProduct[]) ?? []);
+    const cartItems = rawItems ?? [];
+
+    // Step 2: Fetch variants terpisah agar tidak bergantung pada FK join PostgREST
+    const variantIds = [
+      ...new Set(
+        cartItems
+          .filter((i: any) => i.variant_id)
+          .map((i: any) => i.variant_id as string),
+      ),
+    ];
+
+    const variantsMap: Record<string, any> = {};
+    if (variantIds.length > 0) {
+      const { data: variantsData } = await supabase
+        .from("product_variants")
+        .select("*")
+        .in("id", variantIds);
+      (variantsData ?? []).forEach((v: any) => {
+        variantsMap[v.id] = v;
+      });
+    }
+
+    const fetched = cartItems.map((item: any) => ({
+      ...item,
+      variant: item.variant_id ? (variantsMap[item.variant_id] ?? null) : null,
+    }));
+
+    setItems(fetched as CartItemWithProduct[]);
     setLoading(false);
   }, [supabase, router, itemsParam]);
 
