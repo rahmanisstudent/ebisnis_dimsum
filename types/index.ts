@@ -107,12 +107,10 @@ export interface Voucher {
   code: string;
   discount_type: "percentage" | "fixed";
   discount_value: number;
-  min_purchase: number | null;
-  max_uses: number | null;
-  used_count: number;
-  valid_from: string;
-  valid_until: string;
-  is_active: boolean;
+  min_purchase: number;
+  max_discount: number | null;
+  active: boolean;
+  expiry_date: string | null;
   created_at: string;
 }
 
