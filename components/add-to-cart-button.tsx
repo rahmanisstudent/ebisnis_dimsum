@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ShoppingCart,
@@ -11,51 +11,27 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Product, ProductVariant } from "@/types";
-import { cn, formatPrice } from "@/lib/utils";
+import type { Product } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface AddToCartButtonProps {
   product: Product;
 }
 
+/**
+ * Client Component: handles quantity selection and "Add to Cart" action.
+ * Includes cart-creation fallback: if no cart row exists for the user, creates one.
+ */
 export default function AddToCartButton({ product }: AddToCartButtonProps) {
   const [quantity, setQuantity] = useState(1);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    null,
-  );
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
   const router = useRouter();
-  const supabase = createClient(); // Load variants on mount
+  const supabase = createClient();
 
-  useEffect(() => {
-    async function loadVariants() {
-      const { data } = await supabase
-        .from("product_variants")
-        .select("*")
-        .eq("product_id", product.id)
-        .order("name", { ascending: true });
-      if (data && data.length > 0) {
-        setVariants(data); // Find first variant with stock > 0, otherwise default to first
-        const available = data.find((v) => v.stock > 0) ?? data[0];
-        setSelectedVariant(available);
-      }
-    }
-    loadVariants();
-  }, [product.id, supabase]); // Determine active stock and price
-
-  const activeStock = selectedVariant ? selectedVariant.stock : product.stock;
-  const activePrice =
-    product.price + (selectedVariant ? selectedVariant.price_adjustment : 0);
-  const isOutOfStock = activeStock === 0;
-  const maxQty = Math.min(activeStock, 10); // Keep quantity within bounds if selected variant changes
-
-  useEffect(() => {
-    setQuantity((q) => Math.min(Math.max(q, 1), Math.max(maxQty, 1)));
-  }, [selectedVariant, maxQty]);
+  const isOutOfStock = product.stock === 0;
+  const maxQty = Math.min(product.stock, 10);
 
   function increment() {
     setQuantity((q) => Math.min(q + 1, maxQty));
@@ -65,6 +41,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
   }
 
   async function ensureCart(userId: string): Promise<string | null> {
+    // Try to get existing cart
     const { data: existing } = await supabase
       .from("carts")
       .select("id")
@@ -73,6 +50,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
 
     if (existing) return existing.id;
 
+    // No cart exists — create one (fallback if trigger didn't run)
     const { data: newCart, error } = await supabase
       .from("carts")
       .insert({ user_id: userId })
@@ -100,43 +78,32 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
       setErrorMsg(null);
       try {
         const cartId = await ensureCart(user.id);
-        if (!cartId) throw new Error("Gagal memuat keranjang belanja."); // Query existing cart items checking product_id AND variant_id
+        if (!cartId) throw new Error("Gagal memuat keranjang belanja.");
 
-        let itemQuery = supabase
+        // Upsert — increment if product already in cart
+        const { data: existing } = await supabase
           .from("cart_items")
           .select("id, quantity")
           .eq("cart_id", cartId)
-          .eq("product_id", product.id);
-
-        if (selectedVariant) {
-          itemQuery = itemQuery.eq("variant_id", selectedVariant.id);
-        } else {
-          itemQuery = itemQuery.is("variant_id", null);
-        }
-
-        const { data: existing } = await itemQuery.single();
+          .eq("product_id", product.id)
+          .single();
 
         if (existing) {
           const newQty = Math.min(existing.quantity + quantity, maxQty);
-          const { error: updateError } = await supabase
+          await supabase
             .from("cart_items")
             .update({ quantity: newQty })
             .eq("id", existing.id);
-          if (updateError) throw new Error(updateError.message);
         } else {
-          const { error: insertError } = await supabase
-            .from("cart_items")
-            .insert({
-              cart_id: cartId,
-              product_id: product.id,
-              variant_id: selectedVariant ? selectedVariant.id : null,
-              quantity,
-            });
-          if (insertError) throw new Error(insertError.message);
+          await supabase.from("cart_items").insert({
+            cart_id: cartId,
+            product_id: product.id,
+            quantity,
+          });
         }
 
         setStatus("success");
-        router.refresh();
+        router.refresh(); // refresh server components (updates cart count in navbar)
         setTimeout(() => setStatus("idle"), 2500);
       } catch (err) {
         setStatus("error");
@@ -147,112 +114,40 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-            {/* Variants Selection Pills */}     {" "}
-      {variants.length > 0 && (
-        <div className="flex flex-col gap-2">
-                   {" "}
-          <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">
-            Pilih Varian
-          </span>
-                   {" "}
-          <div className="flex flex-wrap gap-2">
-                       {" "}
-            {variants.map((v) => {
-              const isSelected = selectedVariant?.id === v.id;
-              const vOutOfStock = v.stock === 0;
-
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  disabled={vOutOfStock}
-                  onClick={() => setSelectedVariant(v)}
-                  className={cn(
-                    "px-4 py-2 text-xs font-semibold rounded-xl border transition-all duration-200 flex flex-col items-start gap-0.5",
-                    isSelected
-                      ? "border-primary bg-primary-light text-primary-dark"
-                      : vOutOfStock
-                        ? "border-border-soft bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
-                        : "border-border-soft hover:border-text-muted text-text-main bg-white",
-                  )}
-                >
-                                    <span className="font-bold">{v.name}</span> 
-                                 {" "}
-                  <span className="text-[10px] opacity-80">
-                                       {" "}
-                    {v.price_adjustment !== 0
-                      ? `${v.price_adjustment >= 0 ? "+" : ""}${formatPrice(v.price_adjustment)}`
-                      : "Harga Normal"}
-                                     {" "}
-                  </span>
-                                 {" "}
-                </button>
-              );
-            })}
-                     {" "}
-          </div>
-                 {" "}
-        </div>
-      )}
-            {/* Selected Pricing Highlight if Variant Selected */}     {" "}
-      {selectedVariant && (
-        <div className="bg-cream/50 rounded-2xl p-4 border border-border-soft/60">
-                   {" "}
-          <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">
-            Harga Varian Terpilih
-          </p>
-                   {" "}
-          <p className="text-2xl font-black text-accent mt-0.5">
-            {formatPrice(activePrice)}
-          </p>
-                   {" "}
-          <p className="text-xs text-text-muted/80 mt-1">
-            Stok varian {selectedVariant.name}: {activeStock} unit
-          </p>
-                 {" "}
-        </div>
-      )}
-            {/* Quantity selector */}     {" "}
+    <div className="flex flex-col gap-4">
+      {/* Quantity selector */}
       <div className="flex items-center gap-4">
-               {" "}
-        <span className="text-sm text-text-muted font-medium">Jumlah:</span>   
-           {" "}
-        <div className="flex items-center border border-border-soft rounded-2xl overflow-hidden bg-white">
-                   {" "}
+        <span className="text-sm text-text-muted font-medium">Jumlah:</span>
+        <div className="flex items-center border border-border-soft rounded-2xl overflow-hidden">
           <button
-            type="button"
             onClick={decrement}
             disabled={quantity <= 1 || isOutOfStock}
             className="w-10 h-10 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >
-                        <Minus size={15} />         {" "}
+            <Minus size={15} />
           </button>
-                   {" "}
           <span className="w-10 text-center font-bold text-text-main text-sm">
-                        {quantity}         {" "}
+            {quantity}
           </span>
-                   {" "}
           <button
-            type="button"
             onClick={increment}
             disabled={quantity >= maxQty || isOutOfStock}
             className="w-10 h-10 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >
-                        <Plus size={15} />         {" "}
+            <Plus size={15} />
           </button>
-                 {" "}
         </div>
-             {" "}
       </div>
-            {/* Error message */}     {" "}
+
+      {/* Error message */}
       {status === "error" && errorMsg && (
         <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm px-4 py-2.5 rounded-2xl border border-red-200">
-                    <AlertCircle size={15} className="shrink-0" />         {" "}
-          {errorMsg}       {" "}
+          <AlertCircle size={15} className="shrink-0" />
+          {errorMsg}
         </div>
       )}
-            {/* Add to cart button */}     {" "}
+
+      {/* Add to cart button */}
       <button
         onClick={handleAddToCart}
         disabled={isOutOfStock || isPending}
@@ -265,7 +160,6 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
               : "bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0",
         )}
       >
-               {" "}
         {isPending ? (
           <>
             <Loader2 size={18} className="animate-spin" />
@@ -278,16 +172,11 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
           </>
         ) : (
           <>
-                        <ShoppingCart size={18} />           {" "}
-            {isOutOfStock
-              ? "Stok Habis"
-              : `Tambah ke Keranjang • ${formatPrice(quantity * activePrice)}`}
-                     {" "}
+            <ShoppingCart size={18} />
+            {isOutOfStock ? "Stok Habis" : "Tambah ke Keranjang"}
           </>
         )}
-             {" "}
       </button>
-         {" "}
     </div>
   );
 }
