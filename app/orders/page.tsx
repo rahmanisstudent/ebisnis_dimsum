@@ -1,126 +1,165 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { formatPrice, getProductImageUrl, cn } from "@/lib/utils";
+import type { Product } from "@/types";
+import Image from "next/image";
 import Link from "next/link";
-import { formatPrice } from "@/lib/utils";
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/constants";
-import type { Order } from "@/types";
-import { Package, ArrowRight } from "lucide-react";
+import { notFound } from "next/navigation";
+import { ArrowLeft, Package, Tag, ChefHat } from "lucide-react";
+import SpicyIndicator from "@/components/spicy-indicator";
+import AddToCartButton from "@/components/add-to-cart-button";
 import NavbarCart from "@/components/navbar-cart";
 
-export const metadata = {
-  title: "Pesanan Saya",
-};
+interface ProductDetailPageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default async function OrdersPage() {
+export async function generateMetadata({ params }: ProductDetailPageProps) {
+  const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data: product } = await supabase
+    .from("products")
+    .select("name, description")
+    .eq("id", id)
+    .single();
 
-  const { data: orders, error } = await supabase
-    .from("orders")
+  if (!product) return { title: "Produk Tidak Ditemukan" };
+
+  return {
+    title: product.name,
+    description: product.description,
+  };
+}
+
+export default async function ProductDetailPage({
+  params,
+}: ProductDetailPageProps) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { data: product, error } = await supabase
+    .from("products")
     .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .eq("id", id)
+    .single();
 
-  const orderList = (orders as Order[]) ?? [];
+  if (error || !product) notFound();
+
+  const p = product as Product;
+  const imageUrl = getProductImageUrl(p.image_url);
+  const isOutOfStock = p.stock === 0;
 
   return (
     <div className="min-h-screen">
       <header className="glass-header sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
+          <a href="/" className="flex items-center gap-2.5">
             <span className="text-2xl">🥟</span>
             <span className="font-extrabold text-xl tracking-tight">
-              <span className="text-primary">DimSum</span><span className="text-accent">Store</span>
+              <span className="text-primary">DimSum</span>
+              <span className="text-accent">Store</span>
             </span>
-          </Link>
+          </a>
           <NavbarCart />
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-text-main mb-8">
-          🧾 Riwayat Pesanan
-        </h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-primary transition-colors duration-200 font-medium"
+        >
+          <ArrowLeft size={16} />
+          Kembali ke Menu
+        </Link>
+      </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-2xl mb-6">
-            Gagal memuat pesanan: {error.message}
-          </div>
-        )}
-
-        {orderList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-24 h-24 bg-primary-light rounded-full flex items-center justify-center mb-6">
-              <Package className="text-primary" size={40} />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-border-soft overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="relative aspect-square bg-cream overflow-hidden">
+              <Image
+                src={imageUrl}
+                alt={p.name}
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
+              />
+              <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-primary text-xs font-bold px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
+                <Tag size={11} />
+                {p.category}
+              </span>
+              {isOutOfStock && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="bg-white rounded-2xl px-6 py-3 text-center">
+                    <p className="font-bold text-text-main text-lg">
+                      Stok Habis
+                    </p>
+                    <p className="text-text-muted text-sm">
+                      Sedang tidak tersedia
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-            <h2 className="text-xl font-bold text-text-main mb-2">Belum ada pesanan</h2>
-            <p className="text-text-muted text-sm mb-8">Yuk, mulai pesan dimsum pertamamu!</p>
-            <Link href="/" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-2xl transition-all duration-300 shadow-lg shadow-primary/20">
-              Lihat Menu
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {orderList.map((order) => (
-              <div
-                key={order.id}
-                className="bg-white rounded-2xl border border-border-soft p-5 flex items-center justify-between gap-4 hover:shadow-md hover:shadow-primary/5 transition-all duration-300"
-              >
-                <div className="flex flex-col gap-2 min-w-0">
-                  <p className="text-xs text-text-muted font-mono truncate">
-                    #{order.id.slice(0, 8).toUpperCase()}
-                  </p>
-                  <p className="text-sm text-text-muted">
-                    {new Date(order.created_at).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  <p className="font-extrabold text-text-main text-base">
-                    {formatPrice(order.total_price)}
-                  </p>
-                  <span
-                    className={`inline-flex items-center text-xs font-bold px-3 py-1 rounded-full w-fit ${
-                      ORDER_STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {ORDER_STATUS_LABELS[order.status] ?? order.status}
-                  </span>
-                </div>
 
-                <div className="flex flex-col gap-2 shrink-0 items-end">
-                  {order.status === "pending" && order.payment_url && (
-                    <a
-                      href={order.payment_url}
-                      className="bg-accent hover:bg-accent/90 text-white text-xs font-bold px-4 py-2 rounded-2xl transition-all duration-300"
-                    >
-                      Bayar Sekarang
-                    </a>
-                  )}
-                  <Link
-                    href={`/orders/${order.id}`}
-                    className="flex items-center gap-1 text-xs text-text-muted hover:text-primary font-semibold transition-colors duration-200"
-                  >
-                    Detail <ArrowRight size={13} />
-                  </Link>
-                </div>
+            <div className="flex flex-col p-6 md:p-10 gap-5">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-text-main leading-tight">
+                {p.name}
+              </h1>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-text-muted font-medium">
+                  Tingkat Pedas:
+                </span>
+                <SpicyIndicator level={p.spicy_level} />
               </div>
-            ))}
+              <p className="text-text-muted leading-relaxed text-sm md:text-base">
+                {p.description || "Tidak ada deskripsi produk."}
+              </p>
+              <div
+                className={cn(
+                  "flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-2xl w-fit",
+                  isOutOfStock
+                    ? "bg-red-50 text-red-600"
+                    : "bg-primary-light text-primary",
+                )}
+              >
+                <Package size={15} />
+                {isOutOfStock ? "Stok habis" : `${p.stock} unit tersedia`}
+              </div>
+              <div className="border-t border-border-soft" />
+              <div>
+                <p className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-1">
+                  Harga
+                </p>
+                <p className="text-3xl md:text-4xl font-extrabold text-accent">
+                  {formatPrice(p.price)}
+                </p>
+              </div>
+              <AddToCartButton product={p} />
+              <div className="flex items-start gap-3 bg-primary-light/50 rounded-2xl p-4 mt-auto">
+                <ChefHat className="text-primary shrink-0 mt-0.5" size={18} />
+                <p className="text-xs text-primary-dark leading-relaxed">
+                  Dibuat segar setiap hari dari bahan-bahan pilihan berkualitas
+                  tinggi. Dinikmati paling enak saat hangat!
+                </p>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </main>
 
       <footer className="bg-warm-dark text-white/50 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xl">🥟</span>
-            <span className="font-extrabold text-white">DimSum<span className="text-accent">Store</span></span>
+            <span className="font-extrabold text-white">
+              DimSum<span className="text-accent">Store</span>
+            </span>
           </div>
-          <p className="text-sm">© {new Date().getFullYear()} DimsumStore. Semua hak dilindungi.</p>
+          <p className="text-sm">
+            © {new Date().getFullYear()} DimsumStore. Semua hak dilindungi.
+          </p>
         </div>
       </footer>
     </div>
