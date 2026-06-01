@@ -71,13 +71,25 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    // Shipping as a line item
-    itemDetails.push({
-      id: "SHIPPING",
-      price: 15000,
-      quantity: 1,
-      name: "Ongkos Kirim",
-    });
+    // Shipping sebagai line item — gunakan nilai aktual dari order
+    if (order.shipping_cost > 0) {
+      itemDetails.push({
+        id: "SHIPPING",
+        price: order.shipping_cost,
+        quantity: 1,
+        name: "Ongkos Kirim",
+      });
+    }
+
+    // Diskon voucher sebagai line item negatif agar gross_amount == sum(item_details)
+    if (order.discount_amount > 0) {
+      itemDetails.push({
+        id: "DISCOUNT",
+        price: -order.discount_amount,
+        quantity: 1,
+        name: "Diskon Voucher",
+      });
+    }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const payload = {

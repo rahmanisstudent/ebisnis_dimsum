@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CreditCard, Loader2, MapPin, CheckCircle2, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice, getProductImageUrl, calculateShippingCost } from "@/lib/utils";
-import type { CartItem, Product, UserProfile, Voucher } from "@/types";
+import type { CartItem, Product, ProductVariant, UserProfile, Voucher } from "@/types";
 import NavbarCart from "@/components/navbar-cart";
 
 interface CartItemWithProduct extends CartItem { product: Product; }
@@ -64,15 +64,39 @@ function CheckoutContent() {
     const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).single();
     if (!cart) { setLoading(false); return; }
 
-    let query = supabase.from("cart_items").select("*, product:products(*), variant:product_variants(*)").eq("cart_id", cart.id);
-
-    // S01 fix: if specific items were selected, filter by them
+    // Fetch cart items + products (tanpa variant join untuk hindari schema cache issue)
+    let query = supabase.from("cart_items").select("*, product:products(*)").eq("cart_id", cart.id);
     if (selectedItemIds.length > 0) {
       query = query.in("id", selectedItemIds);
     }
+    const { data: cartItemsData, error: cartError } = await query;
+    if (cartError) {
+      console.error("[Checkout] Cart fetch error:", cartError.message);
+      setLoading(false);
+      return;
+    }
 
-    const { data } = await query;
-    setItems((data as CartItemWithProduct[]) ?? []);
+    const rawItems = cartItemsData ?? [];
+
+    // Fetch variants terpisah
+    const variantIds = [...new Set(
+      rawItems.filter((i: CartItem) => i.variant_id).map((i: CartItem) => i.variant_id as string)
+    )];
+    const variantsMap: Record<string, ProductVariant> = {};
+    if (variantIds.length > 0) {
+      const { data: variantsData } = await supabase
+        .from("product_variants")
+        .select("*")
+        .in("id", variantIds);
+      (variantsData ?? []).forEach((v: ProductVariant) => { variantsMap[v.id] = v; });
+    }
+
+    const mergedItems = rawItems.map((item: CartItem) => ({
+      ...item,
+      variant: item.variant_id ? (variantsMap[item.variant_id] ?? null) : null,
+    })) as CartItemWithProduct[];
+
+    setItems(mergedItems);
     setLoading(false);
   }, [supabase, router, selectedItemIds]);
 
@@ -87,10 +111,7 @@ function CheckoutContent() {
   let discountAmount = 0;
   if (appliedVoucher) {
     if (appliedVoucher.discount_type === "percentage") {
-      const calculatedPotongan = Math.round(subtotal * (appliedVoucher.discount_value / 100));
-      discountAmount = appliedVoucher.max_discount
-        ? Math.min(calculatedPotongan, appliedVoucher.max_discount)
-        : calculatedPotongan;
+      discountAmount = Math.round(subtotal * (appliedVoucher.discount_value / 100));
     } else {
       discountAmount = Math.min(appliedVoucher.discount_value, subtotal);
     }
@@ -122,15 +143,23 @@ function CheckoutContent() {
 
       const v = voucher as Voucher;
 
-      if (!v.active) {
+      if (!v.is_active) {
         throw new Error("Voucher tidak aktif.");
       }
 
-      if (v.expiry_date && new Date(v.expiry_date) < new Date()) {
+      if (v.valid_from && new Date(v.valid_from) > new Date()) {
+        throw new Error("Voucher belum aktif.");
+      }
+
+      if (v.valid_until && new Date(v.valid_until) < new Date()) {
         throw new Error("Voucher telah kedaluwarsa.");
       }
 
-      if (subtotal < v.min_purchase) {
+      if (v.max_uses != null && v.used_count >= v.max_uses) {
+        throw new Error("Voucher sudah mencapai batas penggunaan.");
+      }
+
+      if (v.min_purchase != null && subtotal < v.min_purchase) {
         throw new Error(`Minimal pembelian untuk voucher ini adalah ${formatPrice(v.min_purchase)}.`);
       }
 

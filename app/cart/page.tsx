@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Trash2, Minus, Plus, ArrowRight, PackageOpen, Loader2, CheckSquare, Square } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice, getProductImageUrl, cn } from "@/lib/utils";
-import type { CartItem, Product } from "@/types";
+import type { CartItem, Product, ProductVariant } from "@/types";
 import NavbarCart from "@/components/navbar-cart";
 
 interface CartItemWithProduct extends CartItem {
@@ -31,13 +31,39 @@ export default function CartPage() {
     const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).single();
     if (!cart) { setLoading(false); return; }
 
-    const { data } = await supabase
+    // Step 1: Fetch cart items + products (tanpa variant join untuk hindari schema cache issue)
+    const { data: cartItemsData, error: cartError } = await supabase
       .from("cart_items")
-      .select("*, product:products(*), variant:product_variants(*)")
+      .select("*, product:products(*)")
       .eq("cart_id", cart.id)
       .order("created_at", { ascending: true });
 
-    const fetched = (data as CartItemWithProduct[]) ?? [];
+    if (cartError) {
+      console.error("[Cart] Fetch error:", cartError.message);
+      setLoading(false);
+      return;
+    }
+
+    const rawItems = cartItemsData ?? [];
+
+    // Step 2: Fetch variants terpisah agar tidak bergantung pada FK join PostgREST
+    const variantIds = [...new Set(
+      rawItems.filter(i => i.variant_id).map(i => i.variant_id as string)
+    )];
+    const variantsMap: Record<string, ProductVariant> = {};
+    if (variantIds.length > 0) {
+      const { data: variantsData } = await supabase
+        .from("product_variants")
+        .select("*")
+        .in("id", variantIds);
+      (variantsData ?? []).forEach((v: ProductVariant) => { variantsMap[v.id] = v; });
+    }
+
+    const fetched = rawItems.map(item => ({
+      ...item,
+      variant: item.variant_id ? (variantsMap[item.variant_id] ?? null) : null,
+    })) as CartItemWithProduct[];
+
     setItems(fetched);
     setSelectedIds(new Set(fetched.map((i) => i.id)));
     setLoading(false);
