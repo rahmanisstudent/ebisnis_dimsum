@@ -15,11 +15,13 @@ export default function AdminVouchersPage() {
 
   // Form State
   const [code, setCode] = useState("");
-  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">(
+    "percentage",
+  );
   const [discountValue, setDiscountValue] = useState("");
   const [minPurchase, setMinPurchase] = useState("");
-  const [maxDiscount, setMaxDiscount] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
+  const [maxUses, setMaxUses] = useState("");
+  const [validUntil, setValidUntil] = useState("");
 
   const supabase = createClient();
 
@@ -51,17 +53,17 @@ export default function AdminVouchersPage() {
 
     const val = parseInt(discountValue, 10);
     const minP = parseInt(minPurchase, 10) || 0;
-    const maxD = maxDiscount ? parseInt(maxDiscount, 10) : null;
-    const expiry = expiryDate ? new Date(expiryDate).toISOString() : null;
+    const maxU = maxUses ? parseInt(maxUses, 10) : null;
+    const expiry = validUntil ? new Date(validUntil).toISOString() : null;
 
     const { error: insertError } = await supabase.from("vouchers").insert({
       code: code.trim().toUpperCase(),
       discount_type: discountType,
       discount_value: val,
       min_purchase: minP,
-      max_discount: maxD,
-      active: true,
-      expiry_date: expiry,
+      max_uses: maxU,
+      is_active: true,
+      valid_until: expiry,
     });
 
     if (insertError) {
@@ -70,8 +72,8 @@ export default function AdminVouchersPage() {
       setCode("");
       setDiscountValue("");
       setMinPurchase("");
-      setMaxDiscount("");
-      setExpiryDate("");
+      setMaxUses("");
+      setValidUntil("");
       fetchVouchers();
     }
     setSaving(false);
@@ -99,26 +101,31 @@ export default function AdminVouchersPage() {
   async function toggleActive(id: string, currentStatus: boolean) {
     const { error: updateError } = await supabase
       .from("vouchers")
-      .update({ active: !currentStatus })
+      .update({ is_active: !currentStatus })
       .eq("id", id);
 
     if (updateError) {
       setError(updateError.message);
     } else {
       setVouchers((prev) =>
-        prev.map((v) => (v.id === id ? { ...v, active: !currentStatus } : v))
+        prev.map((v) =>
+          v.id === id ? { ...v, is_active: !currentStatus } : v,
+        ),
       );
     }
   }
 
-  const inputClass = "w-full border border-gray-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 bg-gray-900 text-white";
+  const inputClass =
+    "w-full border border-gray-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 bg-gray-900 text-white";
   const labelClass = "text-xs font-semibold text-gray-400";
 
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <Ticket className="text-emerald-500" size={28} />
-        <h1 className="text-2xl font-extrabold text-white">Kelola Voucher Promo</h1>
+        <h1 className="text-2xl font-extrabold text-white">
+          Kelola Voucher Promo
+        </h1>
       </div>
 
       {error && (
@@ -133,7 +140,9 @@ export default function AdminVouchersPage() {
           <h2 className="text-white font-bold mb-4">Buat Voucher Baru</h2>
           <form onSubmit={handleAdd} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="voucher_code" className={labelClass}>Kode Voucher</label>
+              <label htmlFor="voucher_code" className={labelClass}>
+                Kode Voucher
+              </label>
               <input
                 id="voucher_code"
                 type="text"
@@ -146,15 +155,23 @@ export default function AdminVouchersPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="voucher_type" className={labelClass}>Tipe Diskon</label>
+              <label htmlFor="voucher_type" className={labelClass}>
+                Tipe Diskon
+              </label>
               <select
                 id="voucher_type"
                 value={discountType}
-                onChange={(e) => setDiscountType(e.target.value as "percentage" | "fixed")}
+                onChange={(e) =>
+                  setDiscountType(e.target.value as "percentage" | "fixed")
+                }
                 className={inputClass}
               >
-                <option value="percentage" className="bg-gray-900">Persentase (%)</option>
-                <option value="fixed" className="bg-gray-900">Nominal Tetap (Rp)</option>
+                <option value="percentage" className="bg-gray-900">
+                  Persentase (%)
+                </option>
+                <option value="fixed" className="bg-gray-900">
+                  Nominal Tetap (Rp)
+                </option>
               </select>
             </div>
 
@@ -174,7 +191,9 @@ export default function AdminVouchersPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="min_purchase" className={labelClass}>Minimal Pembelian (Rp)</label>
+              <label htmlFor="min_purchase" className={labelClass}>
+                Minimal Pembelian (Rp)
+              </label>
               <input
                 id="min_purchase"
                 type="number"
@@ -185,27 +204,29 @@ export default function AdminVouchersPage() {
               />
             </div>
 
-            {discountType === "percentage" && (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="max_discount" className={labelClass}>Maksimal Diskon (Rp, Opsional)</label>
-                <input
-                  id="max_discount"
-                  type="number"
-                  value={maxDiscount}
-                  onChange={(e) => setMaxDiscount(e.target.value)}
-                  placeholder="Maksimal potongan"
-                  className={inputClass}
-                />
-              </div>
-            )}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="max_uses" className={labelClass}>
+                Maks. Penggunaan (Opsional)
+              </label>
+              <input
+                id="max_uses"
+                type="number"
+                value={maxUses}
+                onChange={(e) => setMaxUses(e.target.value)}
+                placeholder="Kosongkan = tidak terbatas"
+                className={inputClass}
+              />
+            </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="expiry_date" className={labelClass}>Tanggal Kedaluwarsa (Opsional)</label>
+              <label htmlFor="valid_until" className={labelClass}>
+                Tanggal Kedaluwarsa (Opsional)
+              </label>
               <input
-                id="expiry_date"
+                id="valid_until"
                 type="date"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
                 className={inputClass}
               />
             </div>
@@ -215,7 +236,11 @@ export default function AdminVouchersPage() {
               disabled={saving}
               className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white font-bold py-2.5 rounded-xl transition-all text-sm mt-2"
             >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+              {saving ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Plus size={16} />
+              )}
               Buat Voucher
             </button>
           </form>
@@ -226,7 +251,9 @@ export default function AdminVouchersPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
               <h2 className="text-white font-bold">Daftar Voucher</h2>
-              <span className="text-gray-500 text-xs">{vouchers.length} Voucher</span>
+              <span className="text-gray-500 text-xs">
+                {vouchers.length} Voucher
+              </span>
             </div>
 
             {loading ? (
@@ -234,30 +261,54 @@ export default function AdminVouchersPage() {
                 <Loader2 className="animate-spin text-emerald-500" size={24} />
               </div>
             ) : vouchers.length === 0 ? (
-              <p className="p-8 text-center text-gray-500 text-sm">Belum ada voucher</p>
+              <p className="p-8 text-center text-gray-500 text-sm">
+                Belum ada voucher
+              </p>
             ) : (
               <div className="divide-y divide-gray-800">
                 {vouchers.map((v) => (
-                  <div key={v.id} className="px-5 py-4 flex items-center justify-between hover:bg-gray-950/40 transition-all">
+                  <div
+                    key={v.id}
+                    className="px-5 py-4 flex items-center justify-between hover:bg-gray-950/40 transition-all"
+                  >
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
                         <Ticket size={20} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="text-white text-sm font-bold tracking-wide uppercase">{v.code}</p>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${v.active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-gray-850 text-gray-500 border border-gray-800"}`}>
-                            {v.active ? "Aktif" : "Nonaktif"}
+                          <p className="text-white text-sm font-bold tracking-wide uppercase">
+                            {v.code}
+                          </p>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${v.is_active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-gray-850 text-gray-500 border border-gray-800"}`}
+                          >
+                            {v.is_active ? "Aktif" : "Nonaktif"}
                           </span>
                         </div>
                         <p className="text-gray-300 text-xs mt-1">
-                          Diskon: <span className="text-emerald-400 font-semibold">{v.discount_type === "percentage" ? `${v.discount_value}%` : formatPrice(v.discount_value)}</span>
-                          {v.min_purchase > 0 && ` | Min. Beli: ${formatPrice(v.min_purchase)}`}
-                          {v.max_discount && ` | Maks. Potongan: ${formatPrice(v.max_discount)}`}
+                          Diskon:{" "}
+                          <span className="text-emerald-400 font-semibold">
+                            {v.discount_type === "percentage"
+                              ? `${v.discount_value}%`
+                              : formatPrice(v.discount_value)}
+                          </span>
+                          {v.min_purchase > 0 &&
+                            ` | Min. Beli: ${formatPrice(v.min_purchase)}`}
+                          {v.max_uses &&
+                            ` | Maks. Pakai: ${v.used_count ?? 0}/${v.max_uses}x`}
                         </p>
-                        {v.expiry_date && (
+                        {v.valid_until && (
                           <p className="text-gray-500 text-[10px] mt-0.5">
-                            Berlaku hingga: {new Date(v.expiry_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                            Berlaku hingga:{" "}
+                            {new Date(v.valid_until).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              },
+                            )}
                           </p>
                         )}
                       </div>
@@ -265,10 +316,10 @@ export default function AdminVouchersPage() {
 
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => toggleActive(v.id, v.active)}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${v.active ? "border-gray-850 text-gray-400 hover:text-white hover:bg-gray-800" : "border-emerald-500/20 text-emerald-400 hover:bg-emerald-600 hover:text-white"}`}
+                        onClick={() => toggleActive(v.id, v.is_active)}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${v.is_active ? "border-gray-850 text-gray-400 hover:text-white hover:bg-gray-800" : "border-emerald-500/20 text-emerald-400 hover:bg-emerald-600 hover:text-white"}`}
                       >
-                        {v.active ? "Nonaktifkan" : "Aktifkan"}
+                        {v.is_active ? "Nonaktifkan" : "Aktifkan"}
                       </button>
                       <button
                         onClick={() => handleDelete(v.id)}

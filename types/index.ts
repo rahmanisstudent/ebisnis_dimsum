@@ -102,17 +102,19 @@ export interface OrderWithItems extends Order {
   order_items: OrderItem[];
 }
 
-export interface Voucher {
+export type Voucher = {
   id: string;
   code: string;
   discount_type: "percentage" | "fixed";
   discount_value: number;
   min_purchase: number;
-  max_discount: number | null;
-  active: boolean;
-  expiry_date: string | null;
+  max_uses: number | null;
+  used_count: number;
+  is_active: boolean;
+  valid_from: string | null;
+  valid_until: string | null;
   created_at: string;
-}
+};
 
 export interface Review {
   id: string;
