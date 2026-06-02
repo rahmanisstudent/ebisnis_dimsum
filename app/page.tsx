@@ -6,7 +6,7 @@ import CategoryFilter from "@/components/category-filter";
 import ProductSearch from "@/components/product-search";
 import NavbarCart from "@/components/navbar-cart";
 import type { Product, Category } from "@/types";
-import { ChefHat, ArrowRight, Star, Truck, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 // ─── Product Grid ─────────────────────────────────────────────────────────────
 async function ProductGrid({ category, search }: { category: string; search: string }) {
@@ -130,54 +130,34 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div style={heroStyles.overlay} />
 
         <div style={heroStyles.content}>
-          <span style={heroStyles.badge}>
-            <Sparkles size={13} />
-            Baru &amp; Segar Setiap Hari
-          </span>
-
           <h1 style={heroStyles.title}>
             Authentic Dimsum,<br />
             <span style={{ color: "#f5a623" }}>Delivered Fresh.</span>
           </h1>
 
           <p style={heroStyles.subtitle}>
-            Experience the warmth of traditional dimsum dining with our<br />
+            Experience the warmth of traditional dimsum dining with our
             carefully crafted, steaming hot selections.
           </p>
 
           <a href="#catalog" style={heroStyles.cta}>
             Order Now <ArrowRight size={17} />
           </a>
-
-          {/* Stats */}
-          <div style={heroStyles.stats}>
-            {[
-              { icon: ChefHat, value: "50+", label: "Menu" },
-              { icon: Star,     value: "4.9★", label: "Rating" },
-              { icon: Truck,    value: "1K+",  label: "Pelanggan" },
-            ].map(({ icon: Icon, value, label }) => (
-              <div key={label} style={heroStyles.statItem}>
-                <div style={heroStyles.statIcon}><Icon size={16} /></div>
-                <div>
-                  <div style={heroStyles.statValue}>{value}</div>
-                  <div style={heroStyles.statLabel}>{label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
       {/* ─── Catalog ──────────────────────────────────────────────────────────── */}
-      <section id="catalog" style={{ maxWidth: "1280px", margin: "0 auto", padding: "3rem 1.5rem" }}>
-        {/* Header */}
-        <div style={{ marginBottom: "1.75rem" }}>
-          <h2 style={catalogStyles.heading}>Menu Kami</h2>
-          <p style={catalogStyles.sub}>Temukan dimsum favorit kamu</p>
+      <section id="catalog" style={{ maxWidth: "1280px", margin: "0 auto", padding: "2.5rem 1.5rem" }}>
+        {/* Header row */}
+        <div style={catalogStyles.headerRow}>
+          <div>
+            <h2 style={catalogStyles.heading}>Menu Populer</h2>
+            <p style={catalogStyles.sub}>Pilihan favorit dari dapur kami</p>
+          </div>
         </div>
 
-        {/* Category filter */}
-        <div style={{ marginBottom: "1.5rem" }}>
+        {/* Category filter pills */}
+        <div style={{ marginBottom: "1.75rem" }}>
           <Suspense fallback={<div style={{ height: "2.5rem" }} />}>
             <CategoryFilter categories={categories} />
           </Suspense>
@@ -280,7 +260,7 @@ const navStyles = {
 const heroStyles = {
   section: {
     position: "relative" as const,
-    height: "380px",
+    height: "260px",
     overflow: "hidden" as const,
     margin: "1.5rem",
     borderRadius: "20px",
@@ -297,7 +277,7 @@ const heroStyles = {
     position: "absolute" as const,
     inset: 0,
     background:
-      "linear-gradient(90deg, rgba(15,8,5,0.72) 0%, rgba(15,8,5,0.45) 55%, rgba(15,8,5,0.15) 100%)",
+      "linear-gradient(90deg, rgba(10,4,2,0.82) 0%, rgba(10,4,2,0.65) 50%, rgba(10,4,2,0.35) 100%)",
   },
   content: {
     position: "relative" as const,
@@ -386,16 +366,23 @@ const heroStyles = {
 };
 
 const catalogStyles = {
+  headerRow: {
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginBottom: "1.25rem",
+  } as React.CSSProperties,
   heading: {
-    fontSize: "1.6rem",
+    fontSize: "1.5rem",
     fontWeight: 800,
     color: "#1a1a1a",
     marginBottom: "0.2rem",
-  },
+  } as React.CSSProperties,
   sub: {
-    fontSize: "0.875rem",
-    color: "#999",
-  },
+    fontSize: "0.82rem",
+    color: "#c0392b",
+    fontWeight: 500,
+  } as React.CSSProperties,
 };
 
 const footerStyles = {

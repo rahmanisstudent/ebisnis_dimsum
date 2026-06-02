@@ -24,33 +24,58 @@ export default function CategoryFilter({ categories }: CategoryFilterProps) {
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
-  return (
-    <div className="flex flex-wrap gap-2.5 rounded-2xl p-3" style={{ backgroundColor: 'rgba(255,255,255,0.85)', border: '1px solid #EDE8E3' }}>
-      {/* "Semua" filter button */}
-      <button
-        onClick={() => handleSelect("")}
-        className={
-          activeCategory === ""
-            ? "category-pill category-pill-active"
-            : "category-pill"
-        }
-      >
-        🥟 Semua
-      </button>
+  const allItems = [
+    { label: "Semua", value: "" },
+    ...categories.map((cat) => ({ label: cat.name, value: cat.name })),
+  ];
 
-      {categories.map((cat) => (
-        <button
-          key={cat.id}
-          onClick={() => handleSelect(cat.name)}
-          className={
-            activeCategory === cat.name
-              ? "category-pill category-pill-active"
-              : "category-pill"
-          }
-        >
-          {cat.emoji ? `${cat.emoji} ${cat.name}` : cat.name}
-        </button>
-      ))}
+  return (
+    <div style={styles.wrap}>
+      {allItems.map(({ label, value }) => {
+        const isActive = activeCategory === value;
+        return (
+          <button
+            key={value || "all"}
+            onClick={() => handleSelect(value)}
+            style={isActive ? styles.pillActive : styles.pill}
+          >
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }
+
+const styles = {
+  wrap: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "0.5rem",
+  },
+  pill: {
+    padding: "0.45rem 1rem",
+    borderRadius: "50px",
+    fontSize: "0.82rem",
+    fontWeight: 600,
+    border: "1.5px solid #f0e8e4",
+    background: "#fff",
+    color: "#6b6560",
+    cursor: "pointer",
+    transition: "all 0.15s",
+    whiteSpace: "nowrap" as const,
+  },
+  pillActive: {
+    padding: "0.45rem 1rem",
+    borderRadius: "50px",
+    fontSize: "0.82rem",
+    fontWeight: 700,
+    border: "1.5px solid #c0392b",
+    background: "#c0392b",
+    color: "#fff",
+    cursor: "pointer",
+    transition: "all 0.15s",
+    whiteSpace: "nowrap" as const,
+    boxShadow: "0 2px 8px rgba(192,57,43,0.25)",
+  },
+};
