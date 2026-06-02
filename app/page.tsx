@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import ProductCard from "@/components/product-card";
 import { ProductSkeletonGrid } from "@/components/product-skeleton";
@@ -6,7 +6,7 @@ import CategoryFilter from "@/components/category-filter";
 import ProductSearch from "@/components/product-search";
 import NavbarCart from "@/components/navbar-cart";
 import type { Product, Category } from "@/types";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChefHat } from "lucide-react";
 
 // ─── Product Grid ─────────────────────────────────────────────────────────────
 async function ProductGrid({ category, search }: { category: string; search: string }) {
@@ -28,7 +28,7 @@ async function ProductGrid({ category, search }: { category: string; search: str
         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
           <ChefHat className="text-red-400" size={28} />
         </div>
-        <p className="text-text-muted font-medium">Gagal memuat produk</p>
+        <p className="text-text-muted font-medium">Gagal memuat produk.</p>
         <p className="text-text-muted/60 text-sm mt-1">{error.message}</p>
       </div>
     );
@@ -318,7 +318,7 @@ const heroStyles = {
     margin: 0,
   },
   cta: {
-    display: "inline-flex",
+    display: "inline-flex" as const,
     alignItems: "center",
     gap: "0.5rem",
     background: "linear-gradient(135deg, #c0392b 0%, #e74c3c 100%)",
@@ -331,37 +331,6 @@ const heroStyles = {
     width: "fit-content",
     boxShadow: "0 4px 16px rgba(192,57,43,0.4)",
     marginTop: "0.25rem",
-  },
-  stats: {
-    display: "flex",
-    gap: "1.5rem",
-    marginTop: "0.5rem",
-  },
-  statItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.625rem",
-  },
-  statIcon: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "10px",
-    background: "rgba(255,255,255,0.15)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#fff",
-  },
-  statValue: {
-    fontSize: "1rem",
-    fontWeight: 800,
-    color: "#fff",
-    lineHeight: 1.2,
-  },
-  statLabel: {
-    fontSize: "0.7rem",
-    color: "rgba(255,255,255,0.6)",
-    lineHeight: 1,
   },
 };
 

@@ -157,11 +157,11 @@ const card = {
     color: "#1a1a1a",
     lineHeight: 1.3,
     margin: 0,
-    display: "-webkit-box" as const,
+    display: "-webkit-box",
     WebkitLineClamp: 2,
-    WebkitBoxOrient: "vertical" as const,
-    overflow: "hidden" as const,
-  },
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  } as React.CSSProperties,
 
   desc: {
     fontSize: "0.72rem",
