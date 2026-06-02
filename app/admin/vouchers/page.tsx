@@ -319,7 +319,7 @@ export default function AdminVouchersPage() {
                         onClick={() => toggleActive(v.id, v.is_active)}
                         className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${v.is_active ? "border-gray-850 text-gray-400 hover:text-white hover:bg-gray-800" : "border-emerald-500/20 text-emerald-400 hover:bg-emerald-600 hover:text-white"}`}
                       >
-                        {v.is_active ? "Nonaktifkan" : "Aktifkan"}
+                        {v.is_active ? "Nonaktifkan" : "AAAktifkan"}
                       </button>
                       <button
                         onClick={() => handleDelete(v.id)}
