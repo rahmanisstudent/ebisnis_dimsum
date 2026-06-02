@@ -358,7 +358,8 @@ const s: Record<string, React.CSSProperties> = {
   pillsRow: {
     display: "flex",
     justifyContent: "center",
-    marginBottom: "1.5rem",
+    marginBottom: "2rem",
+    padding: "0.5rem 0",
   },
 
   /* Promo banner */
