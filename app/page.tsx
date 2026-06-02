@@ -28,7 +28,7 @@ async function ProductGrid({ category, search }: { category: string; search: str
         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
           <ChefHat className="text-red-400" size={28} />
         </div>
-        <p className="text-text-muted font-medium">Gagal memuat produk.</p>
+        <p className="text-text-muted font-medium">Gagal memuat produk</p>
         <p className="text-text-muted/60 text-sm mt-1">{error.message}</p>
       </div>
     );
