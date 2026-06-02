@@ -156,12 +156,7 @@ function CheckoutContent() {
   let discountAmount = 0;
   if (appliedVoucher) {
     if (appliedVoucher.discount_type === "percentage") {
-      const calculatedPotongan = Math.round(
-        subtotal * (appliedVoucher.discount_value / 100),
-      );
-      discountAmount = appliedVoucher.max_discount
-        ? Math.min(calculatedPotongan, appliedVoucher.max_discount)
-        : calculatedPotongan;
+      discountAmount = Math.round(subtotal * (appliedVoucher.discount_value / 100));
     } else {
       discountAmount = Math.min(appliedVoucher.discount_value, subtotal);
     }
