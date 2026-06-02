@@ -52,6 +52,7 @@ const styles = {
     display: "flex",
     flexWrap: "wrap" as const,
     gap: "0.5rem",
+    justifyContent: "center",
   },
   pill: {
     padding: "0.45rem 1rem",
