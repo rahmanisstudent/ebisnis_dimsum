@@ -75,7 +75,7 @@ function LoginForm() {
           <div style={styles.blob2} />
           <div style={styles.leftContent}>
             <a href="/" style={styles.brandLink}>
-              <span style={styles.brandIcon}>🥟</span>
+              <span style={styles.brandIcon}></span>
               <span style={styles.brandName}>DimsumStore</span>
             </a>
             <div style={styles.illustrationRing}>
@@ -93,7 +93,7 @@ function LoginForm() {
         {/* ── Right Panel ── */}
         <div style={styles.rightPanel}>
           <div style={styles.formHeader}>
-            <h1 style={styles.welcomeTitle}>Selamat Datang! 👋</h1>
+            <h1 style={styles.welcomeTitle}>Selamat Datang!</h1>
             <p style={styles.welcomeSub}>Masukkan detail kamu untuk masuk.</p>
           </div>
 

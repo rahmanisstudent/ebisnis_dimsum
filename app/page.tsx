@@ -6,27 +6,19 @@ import CategoryFilter from "@/components/category-filter";
 import ProductSearch from "@/components/product-search";
 import NavbarCart from "@/components/navbar-cart";
 import type { Product, Category } from "@/types";
-import { ChefHat, Sparkles, Star, Truck } from "lucide-react";
+import { ChefHat, ArrowRight, Star, Truck, Sparkles } from "lucide-react";
 
-// ─── Product Grid (async Server Component) ────────────────────────────────────
-// Separated so it can be wrapped in <Suspense> for streaming skeleton support.
-
+// ─── Product Grid ─────────────────────────────────────────────────────────────
 async function ProductGrid({ category, search }: { category: string; search: string }) {
   const supabase = await createClient();
 
-  // Build query — filter by category if provided
   let query = supabase
     .from("products")
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (category) {
-    query = query.eq("category", category);
-  }
-
-  if (search) {
-    query = query.ilike("name", `%${search}%`);
-  }
+  if (category) query = query.eq("category", category);
+  if (search) query = query.ilike("name", `%${search}%`);
 
   const { data: products, error } = await query;
 
@@ -48,37 +40,25 @@ async function ProductGrid({ category, search }: { category: string; search: str
     return (
       <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
         <div className="text-6xl mb-4">🥟</div>
-        <p className="text-text-main font-semibold text-lg">
-          Belum ada produk di kategori ini.
-        </p>
-        <p className="text-text-muted text-sm mt-1">
-          Coba pilih kategori lain.
-        </p>
+        <p className="text-text-main font-semibold text-lg">Belum ada produk di kategori ini.</p>
+        <p className="text-text-muted text-sm mt-1">Coba pilih kategori lain.</p>
       </div>
     );
   }
 
-  // Fetch reviews to calculate average ratings
-  const { data: reviews } = await supabase
-    .from("reviews")
-    .select("product_id, rating");
+  const { data: reviews } = await supabase.from("reviews").select("product_id, rating");
 
   const ratingMap: Record<string, { avg: number; count: number }> = {};
   if (reviews) {
     reviews.forEach((r) => {
-      if (!ratingMap[r.product_id]) {
-        ratingMap[r.product_id] = { sum: 0, count: 0 } as any;
-      }
+      if (!ratingMap[r.product_id]) ratingMap[r.product_id] = { sum: 0, count: 0 } as any;
       const entry = ratingMap[r.product_id] as any;
       entry.sum += r.rating;
       entry.count += 1;
     });
     Object.keys(ratingMap).forEach((prodId) => {
       const entry = ratingMap[prodId] as any;
-      ratingMap[prodId] = {
-        avg: parseFloat((entry.sum / entry.count).toFixed(1)),
-        count: entry.count,
-      };
+      ratingMap[prodId] = { avg: parseFloat((entry.sum / entry.count).toFixed(1)), count: entry.count };
     });
   }
 
@@ -97,7 +77,6 @@ async function ProductGrid({ category, search }: { category: string; search: str
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-
 interface HomePageProps {
   searchParams: Promise<{ category?: string; search?: string }>;
 }
@@ -117,84 +96,71 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const categories = (categoriesData ?? []) as Category[];
 
   return (
-    <div className="min-h-screen">
-      {/* ─── Navbar ─────────────────────────────────────────────────────── */}
-      <header className="glass-header sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2.5">
-            <span className="text-2xl">🥟</span>
-            <span className="font-extrabold text-xl tracking-tight">
-              <span className="text-primary">DimSum</span>
-              <span className="text-accent">Store</span>
+    <div className="min-h-screen" style={{ background: "#fdf6f0", fontFamily: "var(--font-sans)" }}>
+
+      {/* ─── Navbar ───────────────────────────────────────────────────────────── */}
+      <header style={navStyles.header}>
+        <div style={navStyles.inner}>
+          {/* Logo */}
+          <a href="/" style={navStyles.logo}>
+            <span style={{ fontSize: "1.6rem", lineHeight: 1 }}>🥟</span>
+            <span style={navStyles.logoText}>
+              <span style={{ color: "#c0392b" }}>Dimsum</span>
+              <span style={{ color: "#2d2a26" }}>Store</span>
             </span>
           </a>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-text-muted">
-            <a
-              href="/"
-              className="hover:text-primary transition-colors duration-200"
-            >
-              Menu
-            </a>
-            <a
-              href="/cart"
-              className="hover:text-primary transition-colors duration-200"
-            >
-              Keranjang
-            </a>
-            <a
-              href="/orders"
-              className="hover:text-primary transition-colors duration-200"
-            >
-              Pesanan
-            </a>
-          </nav>
+          {/* Search bar – center */}
+          <Suspense fallback={<div style={navStyles.searchSkeleton} />}>
+            <div style={navStyles.searchWrap}>
+              <ProductSearch />
+            </div>
+          </Suspense>
 
+          {/* Right actions */}
           <NavbarCart />
         </div>
       </header>
 
-      {/* ─── Hero Banner ────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary-dark to-warm-dark text-white">
-        {/* Decorative background blobs */}
-        <div className="absolute -top-10 -right-10 w-72 h-72 bg-accent/15 rounded-full blur-3xl" />
-        <div className="absolute -bottom-16 -left-8 w-80 h-80 bg-primary-light/15 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 right-1/4 w-40 h-40 bg-white/5 rounded-full blur-2xl" />
+      {/* ─── Hero Banner ──────────────────────────────────────────────────────── */}
+      <section style={heroStyles.section}>
+        {/* Background image */}
+        <div style={heroStyles.imageBg} />
+        {/* Dark overlay */}
+        <div style={heroStyles.overlay} />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-          <div className="max-w-xl">
-            <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm text-white text-xs font-semibold px-4 py-2 rounded-full mb-5 tracking-wide">
-              <Sparkles size={14} />
-              Baru & Segar Setiap Hari
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight mb-4">
-              Dimsum Lezat,{" "}
-              <span className="text-accent-light">Dikirim ke Rumahmu</span>
-            </h1>
-            <p className="text-white/80 text-base md:text-lg leading-relaxed">
-              Nikmati berbagai pilihan dimsum kukus, goreng, dan frozen
-              berkualitas premium. Dibuat segar setiap hari dari bahan pilihan.
-            </p>
-          </div>
+        <div style={heroStyles.content}>
+          <span style={heroStyles.badge}>
+            <Sparkles size={13} />
+            Baru &amp; Segar Setiap Hari
+          </span>
 
-          {/* Stats row */}
-          <div className="flex flex-wrap gap-8 mt-10">
+          <h1 style={heroStyles.title}>
+            Authentic Dimsum,<br />
+            <span style={{ color: "#f5a623" }}>Delivered Fresh.</span>
+          </h1>
+
+          <p style={heroStyles.subtitle}>
+            Experience the warmth of traditional dimsum dining with our<br />
+            carefully crafted, steaming hot selections.
+          </p>
+
+          <a href="#catalog" style={heroStyles.cta}>
+            Order Now <ArrowRight size={17} />
+          </a>
+
+          {/* Stats */}
+          <div style={heroStyles.stats}>
             {[
-              { value: "50+", label: "Menu Pilihan", icon: ChefHat },
-              { value: "1000+", label: "Pelanggan Puas", icon: Star },
-              { value: "4.9★", label: "Rating", icon: Truck },
-            ].map(({ value, label, icon: Icon }) => (
-              <div key={label} className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                  <Icon size={18} className="text-white/80" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-extrabold text-white">
-                    {value}
-                  </span>
-                  <span className="text-white/60 text-xs font-medium">
-                    {label}
-                  </span>
+              { icon: ChefHat, value: "50+", label: "Menu" },
+              { icon: Star,     value: "4.9★", label: "Rating" },
+              { icon: Truck,    value: "1K+",  label: "Pelanggan" },
+            ].map(({ icon: Icon, value, label }) => (
+              <div key={label} style={heroStyles.statItem}>
+                <div style={heroStyles.statIcon}><Icon size={16} /></div>
+                <div>
+                  <div style={heroStyles.statValue}>{value}</div>
+                  <div style={heroStyles.statLabel}>{label}</div>
                 </div>
               </div>
             ))}
@@ -202,88 +168,277 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      {/* ─── Catalog Section ────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        {/* Section header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-text-main mb-1">
-              Menu Kami
-            </h2>
-            <p className="text-text-muted text-sm">Temukan dimsum favorit kamu</p>
-          </div>
-          <Suspense fallback={<div className="w-full max-w-md h-12 bg-gray-100 animate-pulse rounded-2xl" />}>
-            <ProductSearch />
-          </Suspense>
+      {/* ─── Catalog ──────────────────────────────────────────────────────────── */}
+      <section id="catalog" style={{ maxWidth: "1280px", margin: "0 auto", padding: "3rem 1.5rem" }}>
+        {/* Header */}
+        <div style={{ marginBottom: "1.75rem" }}>
+          <h2 style={catalogStyles.heading}>Menu Kami</h2>
+          <p style={catalogStyles.sub}>Temukan dimsum favorit kamu</p>
         </div>
 
-        {/* Category filter — client component */}
-        <div className="mb-8">
-          <Suspense fallback={<div className="h-10" />}>
+        {/* Category filter */}
+        <div style={{ marginBottom: "1.5rem" }}>
+          <Suspense fallback={<div style={{ height: "2.5rem" }} />}>
             <CategoryFilter categories={categories} />
           </Suspense>
         </div>
 
-        {/* Product grid — wrapped in Suspense for streaming */}
+        {/* Product grid */}
         <Suspense
-          key={activeCategory + "_" + searchQuery} // Re-mount on category or search change
+          key={activeCategory + "_" + searchQuery}
           fallback={<ProductSkeletonGrid count={8} />}
         >
           <ProductGrid category={activeCategory} search={searchQuery} />
         </Suspense>
       </section>
 
-      {/* ─── Footer ─────────────────────────────────────────────────────── */}
-      <footer className="bg-warm-dark text-white/50 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl">🥟</span>
-              <span className="font-extrabold text-lg">
-                <span className="text-white">DimSum</span>
-                <span className="text-accent">Store</span>
+      {/* ─── Footer ───────────────────────────────────────────────────────────── */}
+      <footer style={footerStyles.footer}>
+        <div style={footerStyles.inner}>
+          <div style={footerStyles.top}>
+            {/* Brand */}
+            <div style={footerStyles.brand}>
+              <span style={{ fontSize: "1.5rem" }}>🥟</span>
+              <span style={{ fontWeight: 800, fontSize: "1.1rem" }}>
+                <span style={{ color: "#fff" }}>Dimsum</span>
+                <span style={{ color: "#f5a623" }}>Store</span>
               </span>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
-              <a
-                href="/"
-                className="hover:text-white transition-colors duration-200"
-              >
-                Menu
-              </a>
-              <a
-                href="/cart"
-                className="hover:text-white transition-colors duration-200"
-              >
-                Keranjang
-              </a>
-              <a
-                href="/orders"
-                className="hover:text-white transition-colors duration-200"
-              >
-                Pesanan
-              </a>
-              <a
-                href="/orders/track"
-                className="hover:text-white transition-colors duration-200"
-              >
-                Lacak Pesanan
-              </a>
-              <a
-                href="/privacy-policy"
-                className="hover:text-white transition-colors duration-200 font-medium text-accent"
-              >
-                Kebijakan Privasi
-              </a>
+
+            {/* Links */}
+            <div style={footerStyles.links}>
+              {[
+                { href: "/", label: "Menu" },
+                { href: "/cart", label: "Keranjang" },
+                { href: "/orders", label: "Pesanan" },
+                { href: "/orders/track", label: "Lacak Pesanan" },
+                { href: "/privacy-policy", label: "Kebijakan Privasi" },
+              ].map(({ href, label }) => (
+                <a key={href} href={href} style={footerStyles.link}>{label}</a>
+              ))}
             </div>
           </div>
-          <div className="border-t border-white/10 mt-8 pt-6 text-center">
-            <p className="text-sm text-white/40">
-              © {new Date().getFullYear()} DimsumStore. Semua hak dilindungi.
-            </p>
-          </div>
+
+          <div style={footerStyles.divider} />
+          <p style={footerStyles.copy}>
+            © {new Date().getFullYear()} DimsumStore. Semua hak dilindungi.
+          </p>
         </div>
       </footer>
     </div>
   );
 }
+
+/* ── Style objects ─────────────────────────────────────────────────────────── */
+
+const navStyles = {
+  header: {
+    position: "sticky" as const,
+    top: 0,
+    zIndex: 50,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    borderBottom: "1px solid #f0e8e4",
+    boxShadow: "0 1px 8px rgba(180,60,40,0.06)",
+  },
+  inner: {
+    maxWidth: "1280px",
+    margin: "0 auto",
+    padding: "0 1.5rem",
+    height: "64px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "1.5rem",
+  },
+  logo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    textDecoration: "none",
+    flexShrink: 0,
+  },
+  logoText: {
+    fontSize: "1.25rem",
+    fontWeight: 800,
+    letterSpacing: "-0.4px",
+  },
+  searchWrap: {
+    flex: 1,
+    maxWidth: "440px",
+  },
+  searchSkeleton: {
+    flex: 1,
+    maxWidth: "440px",
+    height: "42px",
+    borderRadius: "50px",
+    background: "#f0e8e4",
+  },
+};
+
+const heroStyles = {
+  section: {
+    position: "relative" as const,
+    height: "380px",
+    overflow: "hidden" as const,
+    margin: "1.5rem",
+    borderRadius: "20px",
+  },
+  imageBg: {
+    position: "absolute" as const,
+    inset: 0,
+    backgroundImage: "url('/hero-banner.png')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    transform: "scale(1.02)",
+  },
+  overlay: {
+    position: "absolute" as const,
+    inset: 0,
+    background:
+      "linear-gradient(90deg, rgba(15,8,5,0.72) 0%, rgba(15,8,5,0.45) 55%, rgba(15,8,5,0.15) 100%)",
+  },
+  content: {
+    position: "relative" as const,
+    zIndex: 1,
+    padding: "3rem 3.5rem",
+    height: "100%",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "center",
+    maxWidth: "560px",
+    gap: "0.875rem",
+  },
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.375rem",
+    background: "rgba(255,255,255,0.15)",
+    backdropFilter: "blur(8px)",
+    color: "#fff",
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    padding: "0.375rem 0.875rem",
+    borderRadius: "50px",
+    width: "fit-content",
+    letterSpacing: "0.3px",
+  },
+  title: {
+    fontSize: "clamp(1.6rem, 3vw, 2.25rem)",
+    fontWeight: 800,
+    color: "#fff",
+    lineHeight: 1.25,
+    margin: 0,
+  },
+  subtitle: {
+    fontSize: "0.875rem",
+    color: "rgba(255,255,255,0.75)",
+    lineHeight: 1.7,
+    margin: 0,
+  },
+  cta: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    background: "linear-gradient(135deg, #c0392b 0%, #e74c3c 100%)",
+    color: "#fff",
+    fontWeight: 700,
+    fontSize: "0.95rem",
+    padding: "0.75rem 1.625rem",
+    borderRadius: "50px",
+    textDecoration: "none",
+    width: "fit-content",
+    boxShadow: "0 4px 16px rgba(192,57,43,0.4)",
+    marginTop: "0.25rem",
+  },
+  stats: {
+    display: "flex",
+    gap: "1.5rem",
+    marginTop: "0.5rem",
+  },
+  statItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.625rem",
+  },
+  statIcon: {
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    background: "rgba(255,255,255,0.15)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#fff",
+  },
+  statValue: {
+    fontSize: "1rem",
+    fontWeight: 800,
+    color: "#fff",
+    lineHeight: 1.2,
+  },
+  statLabel: {
+    fontSize: "0.7rem",
+    color: "rgba(255,255,255,0.6)",
+    lineHeight: 1,
+  },
+};
+
+const catalogStyles = {
+  heading: {
+    fontSize: "1.6rem",
+    fontWeight: 800,
+    color: "#1a1a1a",
+    marginBottom: "0.2rem",
+  },
+  sub: {
+    fontSize: "0.875rem",
+    color: "#999",
+  },
+};
+
+const footerStyles = {
+  footer: {
+    background: "#1e1210",
+    marginTop: "4rem",
+  },
+  inner: {
+    maxWidth: "1280px",
+    margin: "0 auto",
+    padding: "3rem 1.5rem 2rem",
+  },
+  top: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "1.5rem",
+  },
+  brand: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+  },
+  links: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "0.5rem 1.5rem",
+  },
+  link: {
+    fontSize: "0.875rem",
+    color: "rgba(255,255,255,0.5)",
+    textDecoration: "none",
+    transition: "color 0.2s",
+  },
+  divider: {
+    height: "1px",
+    background: "rgba(255,255,255,0.08)",
+    margin: "2rem 0 1.25rem",
+  },
+  copy: {
+    fontSize: "0.8rem",
+    color: "rgba(255,255,255,0.3)",
+    textAlign: "center" as const,
+  },
+};
