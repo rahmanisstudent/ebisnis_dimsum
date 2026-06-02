@@ -32,6 +32,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const o = order as OrderWithItems;
   const statusColor = ORDER_STATUS_COLORS[o.status] ?? "bg-gray-100 text-gray-600";
   const statusLabel = ORDER_STATUS_LABELS[o.status] ?? o.status;
+  const subtotal = o.order_items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const shippingCost = o.shipping_cost ?? 0;
+  const discountAmount = o.discount_amount ?? 0;
 
   return (
     <div className="min-h-screen">
@@ -96,8 +99,11 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
         <div className="bg-white rounded-2xl border border-border-soft p-5">
           <h2 className="font-extrabold text-text-main mb-4">Rincian Pembayaran</h2>
           <div className="flex flex-col gap-2 text-sm">
-            <div className="flex justify-between text-text-muted"><span>Subtotal</span><span className="text-text-main">{formatPrice(o.total_price - 15000)}</span></div>
-            <div className="flex justify-between text-text-muted"><span>Ongkos Kirim</span><span className="text-text-main">{formatPrice(15000)}</span></div>
+            <div className="flex justify-between text-text-muted"><span>Subtotal</span><span className="text-text-main">{formatPrice(subtotal)}</span></div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-green-600 font-medium"><span>Potongan Voucher</span><span>-{formatPrice(discountAmount)}</span></div>
+            )}
+            <div className="flex justify-between text-text-muted"><span>Ongkos Kirim</span><span className="text-text-main">{formatPrice(shippingCost)}</span></div>
             <div className="border-t border-dashed border-border-soft my-1" />
             <div className="flex justify-between font-extrabold text-text-main text-base"><span>Total</span><span className="text-accent">{formatPrice(o.total_price)}</span></div>
           </div>

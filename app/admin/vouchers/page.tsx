@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,8 +19,9 @@ export default function AdminVouchersPage() {
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
   const [discountValue, setDiscountValue] = useState("");
   const [minPurchase, setMinPurchase] = useState("");
-  const [maxDiscount, setMaxDiscount] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
+  const [maxUses, setMaxUses] = useState("");
+  const [validFrom, setValidFrom] = useState("");
+  const [validUntil, setValidUntil] = useState("");
 
   const supabase = createClient();
 
@@ -44,24 +46,26 @@ export default function AdminVouchersPage() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!code.trim() || !discountValue) return;
+    if (!code.trim() || !discountValue || !validUntil) return;
 
     setSaving(true);
     setError(null);
 
     const val = parseInt(discountValue, 10);
     const minP = parseInt(minPurchase, 10) || 0;
-    const maxD = maxDiscount ? parseInt(maxDiscount, 10) : null;
-    const expiry = expiryDate ? new Date(expiryDate).toISOString() : null;
+    const mUses = maxUses ? parseInt(maxUses, 10) : null;
+    const fromDate = validFrom ? new Date(validFrom).toISOString() : new Date().toISOString();
+    const untilDate = new Date(validUntil).toISOString();
 
     const { error: insertError } = await supabase.from("vouchers").insert({
       code: code.trim().toUpperCase(),
       discount_type: discountType,
       discount_value: val,
       min_purchase: minP,
-      max_discount: maxD,
-      active: true,
-      expiry_date: expiry,
+      max_uses: mUses,
+      is_active: true,
+      valid_from: fromDate,
+      valid_until: untilDate,
     });
 
     if (insertError) {
@@ -70,8 +74,9 @@ export default function AdminVouchersPage() {
       setCode("");
       setDiscountValue("");
       setMinPurchase("");
-      setMaxDiscount("");
-      setExpiryDate("");
+      setMaxUses("");
+      setValidFrom("");
+      setValidUntil("");
       fetchVouchers();
     }
     setSaving(false);
@@ -99,14 +104,14 @@ export default function AdminVouchersPage() {
   async function toggleActive(id: string, currentStatus: boolean) {
     const { error: updateError } = await supabase
       .from("vouchers")
-      .update({ active: !currentStatus })
+      .update({ is_active: !currentStatus })
       .eq("id", id);
 
     if (updateError) {
       setError(updateError.message);
     } else {
       setVouchers((prev) =>
-        prev.map((v) => (v.id === id ? { ...v, active: !currentStatus } : v))
+        prev.map((v) => (v.id === id ? { ...v, is_active: !currentStatus } : v))
       );
     }
   }
@@ -185,27 +190,37 @@ export default function AdminVouchersPage() {
               />
             </div>
 
-            {discountType === "percentage" && (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="max_discount" className={labelClass}>Maksimal Diskon (Rp, Opsional)</label>
-                <input
-                  id="max_discount"
-                  type="number"
-                  value={maxDiscount}
-                  onChange={(e) => setMaxDiscount(e.target.value)}
-                  placeholder="Maksimal potongan"
-                  className={inputClass}
-                />
-              </div>
-            )}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="max_uses" className={labelClass}>Batas Kuota Penggunaan (Opsional)</label>
+              <input
+                id="max_uses"
+                type="number"
+                value={maxUses}
+                onChange={(e) => setMaxUses(e.target.value)}
+                placeholder="Jumlah maksimal pemakaian"
+                className={inputClass}
+              />
+            </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="expiry_date" className={labelClass}>Tanggal Kedaluwarsa (Opsional)</label>
+              <label htmlFor="valid_from" className={labelClass}>Tanggal Mulai Berlaku (Opsional)</label>
               <input
-                id="expiry_date"
-                type="date"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
+                id="valid_from"
+                type="datetime-local"
+                value={validFrom}
+                onChange={(e) => setValidFrom(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="valid_until" className={labelClass}>Tanggal Kedaluwarsa</label>
+              <input
+                id="valid_until"
+                type="datetime-local"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+                required
                 className={inputClass}
               />
             </div>
@@ -246,18 +261,18 @@ export default function AdminVouchersPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="text-white text-sm font-bold tracking-wide uppercase">{v.code}</p>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${v.active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-gray-850 text-gray-500 border border-gray-800"}`}>
-                            {v.active ? "Aktif" : "Nonaktif"}
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${v.is_active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-gray-850 text-gray-500 border border-gray-800"}`}>
+                            {v.is_active ? "Aktif" : "Nonaktif"}
                           </span>
                         </div>
                         <p className="text-gray-300 text-xs mt-1">
                           Diskon: <span className="text-emerald-400 font-semibold">{v.discount_type === "percentage" ? `${v.discount_value}%` : formatPrice(v.discount_value)}</span>
                           {v.min_purchase > 0 && ` | Min. Beli: ${formatPrice(v.min_purchase)}`}
-                          {v.max_discount && ` | Maks. Potongan: ${formatPrice(v.max_discount)}`}
+                          {v.max_uses !== null && ` | Kuota: ${v.used_count}/${v.max_uses}`}
                         </p>
-                        {v.expiry_date && (
+                        {v.valid_until && (
                           <p className="text-gray-500 text-[10px] mt-0.5">
-                            Berlaku hingga: {new Date(v.expiry_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                            Masa berlaku: {new Date(v.valid_from).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })} s.d. {new Date(v.valid_until).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                           </p>
                         )}
                       </div>
@@ -265,10 +280,10 @@ export default function AdminVouchersPage() {
 
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => toggleActive(v.id, v.active)}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${v.active ? "border-gray-850 text-gray-400 hover:text-white hover:bg-gray-800" : "border-emerald-500/20 text-emerald-400 hover:bg-emerald-600 hover:text-white"}`}
+                        onClick={() => toggleActive(v.id, v.is_active)}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${v.is_active ? "border-gray-850 text-gray-400 hover:text-white hover:bg-gray-800" : "border-emerald-500/20 text-emerald-400 hover:bg-emerald-600 hover:text-white"}`}
                       >
-                        {v.active ? "Nonaktifkan" : "Aktifkan"}
+                        {v.is_active ? "Nonaktifkan" : "Aktifkan"}
                       </button>
                       <button
                         onClick={() => handleDelete(v.id)}

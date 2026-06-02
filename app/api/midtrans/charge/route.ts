@@ -72,12 +72,24 @@ export async function POST(request: NextRequest) {
     );
 
     // Shipping as a line item
-    itemDetails.push({
-      id: "SHIPPING",
-      price: 15000,
-      quantity: 1,
-      name: "Ongkos Kirim",
-    });
+    if (order.shipping_cost > 0) {
+      itemDetails.push({
+        id: "SHIPPING",
+        price: order.shipping_cost,
+        quantity: 1,
+        name: "Ongkos Kirim",
+      });
+    }
+
+    // Discount as a line item (with negative price)
+    if (order.discount_amount > 0) {
+      itemDetails.push({
+        id: "DISCOUNT",
+        price: -order.discount_amount,
+        quantity: 1,
+        name: "Diskon Voucher",
+      });
+    }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const payload = {

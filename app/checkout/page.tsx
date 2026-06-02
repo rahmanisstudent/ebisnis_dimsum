@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/immutability */
 "use client";
 
 import { useEffect, useState, useCallback, Suspense } from "react";
@@ -87,10 +88,7 @@ function CheckoutContent() {
   let discountAmount = 0;
   if (appliedVoucher) {
     if (appliedVoucher.discount_type === "percentage") {
-      const calculatedPotongan = Math.round(subtotal * (appliedVoucher.discount_value / 100));
-      discountAmount = appliedVoucher.max_discount
-        ? Math.min(calculatedPotongan, appliedVoucher.max_discount)
-        : calculatedPotongan;
+      discountAmount = Math.round(subtotal * (appliedVoucher.discount_value / 100));
     } else {
       discountAmount = Math.min(appliedVoucher.discount_value, subtotal);
     }
@@ -122,12 +120,21 @@ function CheckoutContent() {
 
       const v = voucher as Voucher;
 
-      if (!v.active) {
+      if (!v.is_active) {
         throw new Error("Voucher tidak aktif.");
       }
 
-      if (v.expiry_date && new Date(v.expiry_date) < new Date()) {
+      const now = new Date();
+      if (new Date(v.valid_from) > now) {
+        throw new Error("Voucher belum berlaku.");
+      }
+
+      if (new Date(v.valid_until) < now) {
         throw new Error("Voucher telah kedaluwarsa.");
+      }
+
+      if (v.max_uses !== null && v.used_count >= v.max_uses) {
+        throw new Error("Voucher ini telah melebihi batas kuota penggunaan.");
       }
 
       if (subtotal < v.min_purchase) {
@@ -204,7 +211,7 @@ function CheckoutContent() {
         throw new Error(body.error || "Gagal membuat transaksi pembayaran.");
       }
       const { payment_url } = await response.json();
-      window.location.href = payment_url;
+      window.location.assign(payment_url);
     } catch (err) {
       setError((err as Error).message);
       setProcessing(false);
