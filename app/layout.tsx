@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+// 1. Impor komponen Script dari Next.js
+import Script from "next/script"; 
 import "./globals.css";
 
 const poppins = Poppins({
@@ -28,7 +30,27 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id" className={poppins.variable}>
-      <body className="antialiased font-sans">{children}</body>
+      <head>
+        {/* 2. Mengunduh skrip utama Google Analytics secara asinkron */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-HRLY00BMVR"
+          strategy="afterInteractive"
+        />
+        
+        {/* 3. Inisialisasi konfigurasi dataLayer Google Analytics */}
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-HRLY00BMVR');
+          `}
+        </Script>
+      </head>
+      <body className="antialiased font-sans">
+        {children}
+      </body>
     </html>
   );
 }
