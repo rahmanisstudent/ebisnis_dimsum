@@ -244,7 +244,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <span className="text-accent">Store</span>
               </span>
             </div>
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
               <a
                 href="/"
                 className="hover:text-white transition-colors duration-200"
@@ -262,6 +262,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 className="hover:text-white transition-colors duration-200"
               >
                 Pesanan
+              </a>
+              <a
+                href="/orders/track"
+                className="hover:text-white transition-colors duration-200"
+              >
+                Lacak Pesanan
+              </a>
+              <a
+                href="/privacy-policy"
+                className="hover:text-white transition-colors duration-200 font-medium text-accent"
+              >
+                Kebijakan Privasi
               </a>
             </div>
           </div>

@@ -114,6 +114,18 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             </a>
           )}
         </div>
+
+        {/* WhatsApp Customer Service Support */}
+        <div className="mt-4">
+          <a
+            href={`https://wa.me/6287885559642?text=${encodeURIComponent(`Halo Admin DimsumStore, saya ingin bertanya tentang pesanan saya #DS-${o.id.slice(0, 8).toUpperCase()}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold py-3.5 rounded-2xl transition-all duration-300 shadow-lg shadow-green-500/10 text-sm"
+          >
+            Hubungi CS via WhatsApp
+          </a>
+        </div>
       </main>
     </div>
   );

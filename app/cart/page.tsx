@@ -10,11 +10,13 @@ import { formatPrice, getProductImageUrl, cn } from "@/lib/utils";
 import type { CartItem, Product, ProductVariant } from "@/types";
 import NavbarCart from "@/components/navbar-cart";
 
-interface CartItemWithProduct extends CartItem {
+interface CartItemWithProduct extends Omit<CartItem, "variant"> {
   product: Product;
+  variant: ProductVariant | null;
 }
 
 export default function CartPage() {
+  const [user, setUser] = useState<any>(null);
   const [items, setItems] = useState<CartItemWithProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -25,13 +27,68 @@ export default function CartPage() {
 
   const fetchCart = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    setUser(currentUser);
 
-    const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).single();
-    if (!cart) { setLoading(false); return; }
+    if (!currentUser) {
+      // ── Guest Cart (localStorage) ──
+      try {
+        const localCart = JSON.parse(localStorage.getItem("guest_cart") ?? "[]");
+        if (localCart.length === 0) {
+          setItems([]);
+          setLoading(false);
+          return;
+        }
 
-    // Step 1: Fetch cart items + products (tanpa variant join untuk hindari schema cache issue)
+        const productIds = localCart.map((i: any) => i.product_id);
+        const { data: dbProducts } = await supabase
+          .from("products")
+          .select("*")
+          .in("id", productIds);
+
+        const variantIds = localCart.filter((i: any) => i.variant_id).map((i: any) => i.variant_id);
+        const variantsMap: Record<string, ProductVariant> = {};
+        if (variantIds.length > 0) {
+          const { data: variantsData } = await supabase
+            .from("product_variants")
+            .select("*")
+            .in("id", variantIds);
+          (variantsData ?? []).forEach((v: ProductVariant) => {
+            variantsMap[v.id] = v;
+          });
+        }
+
+        const fetched = localCart.map((item: any, idx: number) => {
+          const product = dbProducts?.find((p: any) => p.id === item.product_id);
+          return {
+            id: `guest-${idx}-${item.product_id}-${item.variant_id || ""}`,
+            cart_id: "guest",
+            product_id: item.product_id,
+            variant_id: item.variant_id || null,
+            quantity: item.quantity,
+            created_at: new Date().toISOString(),
+            product: product || null,
+            variant: item.variant_id ? (variantsMap[item.variant_id] ?? null) : null,
+          };
+        }).filter((item: any) => item.product !== null) as CartItemWithProduct[];
+
+        setItems(fetched);
+        setSelectedIds(new Set(fetched.map((i) => i.id)));
+      } catch (e) {
+        console.error("Failed to parse guest cart:", e);
+        setItems([]);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // ── Logged In User Cart (Supabase) ──
+    const { data: cart } = await supabase.from("carts").select("id").eq("user_id", currentUser.id).single();
+    if (!cart) {
+      setLoading(false);
+      return;
+    }
+
     const { data: cartItemsData, error: cartError } = await supabase
       .from("cart_items")
       .select("*, product:products(*)")
@@ -46,9 +103,8 @@ export default function CartPage() {
 
     const rawItems = cartItemsData ?? [];
 
-    // Step 2: Fetch variants terpisah agar tidak bergantung pada FK join PostgREST
     const variantIds = [...new Set(
-      rawItems.filter(i => i.variant_id).map(i => i.variant_id as string)
+      rawItems.filter((i) => i.variant_id).map((i) => i.variant_id as string)
     )];
     const variantsMap: Record<string, ProductVariant> = {};
     if (variantIds.length > 0) {
@@ -56,10 +112,12 @@ export default function CartPage() {
         .from("product_variants")
         .select("*")
         .in("id", variantIds);
-      (variantsData ?? []).forEach((v: ProductVariant) => { variantsMap[v.id] = v; });
+      (variantsData ?? []).forEach((v: ProductVariant) => {
+        variantsMap[v.id] = v;
+      });
     }
 
-    const fetched = rawItems.map(item => ({
+    const fetched = rawItems.map((item) => ({
       ...item,
       variant: item.variant_id ? (variantsMap[item.variant_id] ?? null) : null,
     })) as CartItemWithProduct[];
@@ -69,7 +127,9 @@ export default function CartPage() {
     setLoading(false);
   }, [supabase]);
 
-  useEffect(() => { fetchCart(); }, [fetchCart]);
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
 
   const allSelected = items.length > 0 && selectedIds.size === items.length;
   const noneSelected = selectedIds.size === 0;
@@ -82,23 +142,75 @@ export default function CartPage() {
   function toggleItem(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
   async function updateQuantity(itemId: string, newQty: number) {
     setUpdatingId(itemId);
-    await supabase.from("cart_items").update({ quantity: newQty }).eq("id", itemId);
-    setItems((prev) => prev.map((item) => item.id === itemId ? { ...item, quantity: newQty } : item));
+    if (user) {
+      // Supabase
+      await supabase.from("cart_items").update({ quantity: newQty }).eq("id", itemId);
+    } else {
+      // LocalStorage guest cart
+      try {
+        const localCart = JSON.parse(localStorage.getItem("guest_cart") ?? "[]");
+        const targetItem = items.find((i) => i.id === itemId);
+        if (targetItem) {
+          const matchIdx = localCart.findIndex(
+            (i: any) =>
+              i.product_id === targetItem.product_id &&
+              i.variant_id === targetItem.variant_id
+          );
+          if (matchIdx !== -1) {
+            localCart[matchIdx].quantity = newQty;
+            localStorage.setItem("guest_cart", JSON.stringify(localCart));
+            // Trigger NavbarCart count update
+            window.dispatchEvent(new Event("cartUpdated"));
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setItems((prev) => prev.map((item) => (item.id === itemId ? { ...item, quantity: newQty } : item)));
     setUpdatingId(null);
   }
 
   async function removeItem(itemId: string) {
     setUpdatingId(itemId);
-    await supabase.from("cart_items").delete().eq("id", itemId);
+    if (user) {
+      // Supabase
+      await supabase.from("cart_items").delete().eq("id", itemId);
+    } else {
+      // LocalStorage guest cart
+      try {
+        const localCart = JSON.parse(localStorage.getItem("guest_cart") ?? "[]");
+        const targetItem = items.find((i) => i.id === itemId);
+        if (targetItem) {
+          const filtered = localCart.filter(
+            (i: any) =>
+              !(
+                i.product_id === targetItem.product_id &&
+                i.variant_id === targetItem.variant_id
+              )
+          );
+          localStorage.setItem("guest_cart", JSON.stringify(filtered));
+          // Trigger NavbarCart count update
+          window.dispatchEvent(new Event("cartUpdated"));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
     setItems((prev) => prev.filter((item) => item.id !== itemId));
-    setSelectedIds((prev) => { const next = new Set(prev); next.delete(itemId); return next; });
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(itemId);
+      return next;
+    });
     setUpdatingId(null);
   }
 
@@ -107,13 +219,25 @@ export default function CartPage() {
     const itemPrice = item.product.price + (item.variant?.price_adjustment ?? 0);
     return sum + itemPrice * item.quantity;
   }, 0);
-  const shipping = subtotal > 0 ? 15000 : 0;
-  const total = subtotal + shipping;
 
   function handleCheckout() {
     if (noneSelected) return;
-    const ids = [...selectedIds].join(",");
-    router.push(`/checkout?items=${ids}`);
+
+    if (user) {
+      // Send selected database IDs
+      const ids = [...selectedIds].join(",");
+      router.push(`/checkout?items=${ids}`);
+    } else {
+      // Guest: Store checked out items specifically in a temporary localstorage key
+      // and redirect with type=guest
+      const checkedOutItems = selectedItems.map((item) => ({
+        product_id: item.product_id,
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+      }));
+      localStorage.setItem("checkout_guest_items", JSON.stringify(checkedOutItems));
+      router.push(`/checkout?items=guest`);
+    }
   }
 
   if (loading) {
@@ -131,7 +255,8 @@ export default function CartPage() {
           <Link href="/" className="flex items-center gap-2.5">
             <span className="text-2xl">🥟</span>
             <span className="font-extrabold text-xl tracking-tight">
-              <span className="text-primary">DimSum</span><span className="text-accent">Store</span>
+              <span className="text-primary">DimSum</span>
+              <span className="text-accent">Store</span>
             </span>
           </Link>
           <NavbarCart />
@@ -150,7 +275,10 @@ export default function CartPage() {
             </div>
             <h2 className="text-xl font-bold text-text-main mb-2">Keranjang kamu kosong</h2>
             <p className="text-text-muted text-sm mb-8">Yuk, tambahkan dimsum favorit kamu!</p>
-            <Link href="/" className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-2xl transition-all duration-300 shadow-lg shadow-primary/20">
+            <Link
+              href="/"
+              className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-2xl transition-all duration-300 shadow-lg shadow-primary/20"
+            >
               Lihat Menu
             </Link>
           </div>
@@ -158,11 +286,22 @@ export default function CartPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 flex flex-col gap-3">
               <div className="surface-card px-4 py-3 flex items-center justify-between">
-                <button onClick={toggleAll} className="flex items-center gap-2.5 text-sm font-semibold text-text-main hover:text-primary transition-colors duration-200">
-                  {allSelected ? <CheckSquare size={20} className="text-primary" /> : <Square size={20} className="text-border-soft" />}
+                <button
+                  onClick={toggleAll}
+                  className="flex items-center gap-2.5 text-sm font-semibold text-text-main hover:text-primary transition-colors duration-200"
+                >
+                  {allSelected ? (
+                    <CheckSquare size={20} className="text-primary" />
+                  ) : (
+                    <Square size={20} className="text-border-soft" />
+                  )}
                   {allSelected ? "Batal Pilih Semua" : "Pilih Semua"}
                 </button>
-                {!noneSelected && <span className="text-xs text-text-muted font-medium">{selectedIds.size} dari {items.length} item dipilih</span>}
+                {!noneSelected && (
+                  <span className="text-xs text-text-muted font-medium">
+                    {selectedIds.size} dari {items.length} item dipilih
+                  </span>
+                )}
               </div>
 
               {items.map((item) => {
@@ -173,13 +312,30 @@ export default function CartPage() {
                 const activePrice = item.product.price + (item.variant?.price_adjustment ?? 0);
 
                 return (
-                  <div key={item.id} className={cn("surface-card p-4 flex gap-3 transition-all duration-200", isSelected ? "border-primary/30 shadow-sm" : "border-border-soft opacity-60", isUpdating && "opacity-50")}>
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "surface-card p-4 flex gap-3 transition-all duration-200",
+                      isSelected ? "border-primary/30 shadow-sm" : "border-border-soft opacity-60",
+                      isUpdating && "opacity-50"
+                    )}
+                  >
                     <button onClick={() => toggleItem(item.id)} className="shrink-0 mt-1">
-                      {isSelected ? <CheckSquare size={20} className="text-primary" /> : <Square size={20} className="text-border-soft" />}
+                      {isSelected ? (
+                        <CheckSquare size={20} className="text-primary" />
+                      ) : (
+                        <Square size={20} className="text-border-soft" />
+                      )}
                     </button>
 
                     <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-cream shrink-0">
-                      <Image src={getProductImageUrl(item.product.image_url)} alt={item.product.name} fill sizes="96px" className="object-cover" />
+                      <Image
+                        src={getProductImageUrl(item.product.image_url)}
+                        alt={item.product.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                      />
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -193,24 +349,43 @@ export default function CartPage() {
                               </span>
                             )}
                           </h3>
-                          <span className="text-xs text-text-muted mt-0.5 block">{item.product.category}</span>
+                          <span className="text-xs text-text-muted mt-0.5 block">
+                            {item.product.category}
+                          </span>
                         </div>
-                        <button onClick={() => removeItem(item.id)} disabled={isUpdating} className="text-border-soft hover:text-red-500 transition-colors duration-200 shrink-0 p-1" aria-label="Hapus">
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          disabled={isUpdating}
+                          className="text-border-soft hover:text-red-500 transition-colors duration-200 shrink-0 p-1"
+                          aria-label="Hapus"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
 
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center border border-border-soft rounded-2xl overflow-hidden bg-white">
-                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1 || isUpdating} className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 1 || isUpdating}
+                            className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                          >
                             <Minus size={13} />
                           </button>
-                          <span className="w-8 text-center text-sm font-bold text-text-main">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} disabled={item.quantity >= maxQty || isUpdating} className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200">
+                          <span className="w-8 text-center text-sm font-bold text-text-main">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={item.quantity >= maxQty || isUpdating}
+                            className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                          >
                             <Plus size={13} />
                           </button>
                         </div>
-                        <span className="font-extrabold text-accent text-sm">{formatPrice(activePrice * item.quantity)}</span>
+                        <span className="font-extrabold text-accent text-sm">
+                          {formatPrice(activePrice * item.quantity)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -230,16 +405,36 @@ export default function CartPage() {
                 ) : (
                   <div className="flex flex-col gap-3 text-sm">
                     <div className="text-xs text-text-muted mb-1">{selectedIds.size} item dipilih</div>
-                    <div className="flex justify-between text-text-muted"><span>Subtotal</span><span className="font-semibold text-text-main">{formatPrice(subtotal)}</span></div>
-                    <div className="flex justify-between text-text-muted"><span>Ongkos Kirim</span><span className="font-semibold text-text-main">{formatPrice(shipping)}</span></div>
+                    <div className="flex justify-between text-text-muted">
+                      <span>Subtotal</span>
+                      <span className="font-semibold text-text-main">{formatPrice(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-text-muted">
+                      <span>Ongkos Kirim</span>
+                      <span className="font-medium text-text-muted text-xs italic">Akan dihitung saat checkout</span>
+                    </div>
                     <div className="border-t border-dashed border-border-soft my-1" />
-                    <div className="flex justify-between text-text-main font-extrabold text-base"><span>Total</span><span className="text-accent">{formatPrice(total)}</span></div>
+                    <div className="flex justify-between text-text-main font-extrabold text-base">
+                      <span>Total Sementara</span>
+                      <span className="text-accent">{formatPrice(subtotal)}</span>
+                    </div>
                   </div>
                 )}
 
-                <button onClick={handleCheckout} disabled={noneSelected} className={cn("w-full mt-6 flex items-center justify-center gap-2 font-bold py-4 rounded-2xl transition-all duration-300", noneSelected ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0")}>
+                <button
+                  onClick={handleCheckout}
+                  disabled={noneSelected}
+                  className={cn(
+                    "w-full mt-6 flex items-center justify-center gap-2 font-bold py-4 rounded-2xl transition-all duration-300",
+                    noneSelected
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0"
+                  )}
+                >
                   Lanjut ke Pembayaran
-                  {!noneSelected && <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">{selectedIds.size}</span>}
+                  {!noneSelected && (
+                    <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">{selectedIds.size}</span>
+                  )}
                   <ArrowRight size={18} />
                 </button>
 

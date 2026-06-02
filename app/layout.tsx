@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 // 1. Impor komponen Script dari Next.js
 import Script from "next/script"; 
 import "./globals.css";
+import WhatsAppWidget from "@/components/whatsapp-widget";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -50,6 +51,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased font-sans">
         {children}
+        <WhatsAppWidget />
       </body>
     </html>
   );

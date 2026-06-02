@@ -175,12 +175,34 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       </main>
 
       <footer className="bg-warm-dark text-white/50 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🥟</span>
-            <span className="font-extrabold text-white">DimSum<span className="text-accent">Store</span></span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🥟</span>
+              <span className="font-extrabold text-white">DimSum<span className="text-accent">Store</span></span>
+            </div>
+            
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
+              <a href="/" className="hover:text-white transition-colors duration-200">
+                Menu
+              </a>
+              <a href="/cart" className="hover:text-white transition-colors duration-200">
+                Keranjang
+              </a>
+              <a href="/orders" className="hover:text-white transition-colors duration-200">
+                Pesanan
+              </a>
+              <a href="/orders/track" className="hover:text-white transition-colors duration-200">
+                Lacak Pesanan
+              </a>
+              <a href="/privacy-policy" className="hover:text-white transition-colors duration-200 font-medium text-accent">
+                Kebijakan Privasi
+              </a>
+            </div>
           </div>
-          <p className="text-sm">© {new Date().getFullYear()} DimsumStore. Semua hak dilindungi.</p>
+          <div className="border-t border-white/10 mt-8 pt-6 text-center">
+            <p className="text-sm">© {new Date().getFullYear()} DimsumStore. Semua hak dilindungi.</p>
+          </div>
         </div>
       </footer>
     </div>
