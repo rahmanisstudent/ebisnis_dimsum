@@ -81,11 +81,45 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    // ── Guest Cart (localStorage) ─────────────────────────────────────────────
     if (!user) {
-      router.push("/login");
+      startTransition(async () => {
+        try {
+          const localCart: any[] = JSON.parse(localStorage.getItem("guest_cart") ?? "[]");
+          const variantId = selectedVariant?.id ?? null;
+
+          const existingIdx = localCart.findIndex(
+            (i) => i.product_id === product.id && i.variant_id === variantId
+          );
+
+          if (existingIdx !== -1) {
+            localCart[existingIdx].quantity = Math.min(
+              localCart[existingIdx].quantity + quantity,
+              maxQty
+            );
+          } else {
+            localCart.push({
+              product_id: product.id,
+              variant_id: variantId,
+              quantity,
+            });
+          }
+
+          localStorage.setItem("guest_cart", JSON.stringify(localCart));
+          // Notify NavbarCart to update count badge
+          window.dispatchEvent(new Event("cartUpdated"));
+          setStatus("success");
+          setTimeout(() => setStatus("idle"), 2500);
+        } catch (err) {
+          setStatus("error");
+          setErrorMsg("Gagal menambah ke keranjang.");
+          setTimeout(() => setStatus("idle"), 3000);
+        }
+      });
       return;
     }
 
+    // ── Authenticated Cart (Supabase) ─────────────────────────────────────────
     startTransition(async () => {
       setErrorMsg(null);
       try {
@@ -134,6 +168,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
       }
     });
   }
+
 
   return (
     <div className="flex flex-col gap-5">
