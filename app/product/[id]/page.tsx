@@ -8,6 +8,7 @@ import { ArrowLeft, Package, Tag, ChefHat, Star, MessageSquare } from "lucide-re
 import SpicyIndicator from "@/components/spicy-indicator";
 import AddToCartButton from "@/components/add-to-cart-button";
 import NavbarCart from "@/components/navbar-cart";
+import ReviewForm from "@/components/review-form";
 
 interface ProductDetailPageProps {
   params: Promise<{ id: string }>;
@@ -52,6 +53,46 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const avgRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : null;
+
+  // ── Review eligibility checks (server-side) ────────────────────────────
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+  let canReview = false;
+  let alreadyReviewed = false;
+
+  if (user) {
+    // 1. Find completed orders by this user
+    const { data: completedOrders } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "selesai");
+
+    if (completedOrders && completedOrders.length > 0) {
+      const orderIds = completedOrders.map((o: any) => o.id);
+
+      // 2. Check if any of those orders contain this product
+      const { data: orderItems } = await supabase
+        .from("order_items")
+        .select("order_id")
+        .in("order_id", orderIds)
+        .eq("product_id", id)
+        .limit(1);
+
+      if (orderItems && orderItems.length > 0) {
+        // 3. Check for existing review (duplicate guard)
+        const { data: existingReview } = await supabase
+          .from("reviews")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("product_id", id)
+          .maybeSingle();
+
+        alreadyReviewed = !!existingReview;
+        canReview = !alreadyReviewed;
+      }
+    }
+  }
 
   const p = product as Product;
   const imageUrl = getProductImageUrl(p.image_url);
@@ -145,7 +186,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="font-bold text-sm text-text-main">
-                        {r.user?.full_name || "Pelanggan Tanpa Nama"}
+                        {r.user?.full_name || "Pelanggan"}
                       </p>
                       <div className="flex items-center gap-0.5 text-amber-400 mt-0.5">
                         {[...Array(5)].map((_, idx) => (
@@ -164,13 +205,23 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   </div>
                   {r.comment && (
                     <p className="text-xs text-text-main leading-relaxed mt-1 font-medium bg-cream/20 px-3 py-2 rounded-xl border border-border-soft/40 italic">
-                      "{r.comment}"
+                      &ldquo;{r.comment}&rdquo;
                     </p>
                   )}
                 </div>
               ))}
             </div>
           )}
+
+          {/* Review submission form — visibility controlled by ReviewForm itself */}
+          <div className="mt-6 pt-6 border-t border-border-soft">
+            <ReviewForm
+              productId={id}
+              isLoggedIn={isLoggedIn}
+              canReview={canReview}
+              alreadyReviewed={alreadyReviewed}
+            />
+          </div>
         </div>
       </main>
 
