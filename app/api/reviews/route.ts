@@ -32,12 +32,13 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // ── 1. Find completed orders belonging to this user ─────────────────────
+    // ── 1. Find paid/completed orders belonging to this user ─────────────────
+    // 'paid' = payment confirmed by Midtrans, 'selesai' = delivery confirmed
     const { data: completedOrders } = await supabaseAdmin
       .from("orders")
       .select("id")
       .eq("user_id", user.id)
-      .eq("status", "selesai");
+      .in("status", ["paid", "selesai"]);
 
     if (!completedOrders || completedOrders.length === 0) {
       return NextResponse.json(
