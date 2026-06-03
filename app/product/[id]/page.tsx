@@ -36,6 +36,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const { id } = await params;
   const supabase = await createClient();
 
+  // Admin client — bypasses RLS so reviews & eligibility checks always work
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   const { data: product, error } = await supabase
     .from("products")
     .select("*")
@@ -44,7 +50,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
   if (error || !product) notFound();
 
-  const { data: reviewsData } = await supabase
+  // Fetch reviews via admin client so ALL reviews are publicly visible
+  const { data: reviewsData } = await supabaseAdmin
     .from("reviews")
     .select("*, user:user_profiles(full_name)")
     .eq("product_id", id)
@@ -55,22 +62,14 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : null;
 
-  // ── Review eligibility checks (server-side, admin client to bypass RLS) ──
+  // Review eligibility checks (server-side, admin client to bypass RLS)
   const { data: { user } } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
   let canReview = false;
   let alreadyReviewed = false;
 
   if (user) {
-    // Use admin client so RLS on order_items doesn’t block the query
-    const supabaseAdmin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     // 1. Find paid/completed orders by this user
-    //    'paid'   = payment confirmed by Midtrans
-    //    'selesai' = admin confirmed delivery
     const { data: eligibleOrders } = await supabaseAdmin
       .from("orders")
       .select("id")
@@ -80,7 +79,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     if (eligibleOrders && eligibleOrders.length > 0) {
       const orderIds = eligibleOrders.map((o: any) => o.id);
 
-      // 2. Check if any of those orders contain this product
+      // 2. Check if product exists in one of those orders
       const { data: orderItems } = await supabaseAdmin
         .from("order_items")
         .select("order_id")
@@ -89,7 +88,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         .limit(1);
 
       if (orderItems && orderItems.length > 0) {
-        // 3. Check for existing review (duplicate guard)
+        // 3. Duplicate review guard
         const { data: existingReview } = await supabaseAdmin
           .from("reviews")
           .select("id")
