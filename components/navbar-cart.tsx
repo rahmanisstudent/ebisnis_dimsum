@@ -126,19 +126,21 @@ export default function NavbarCart() {
         </Link>
       </nav>
 
-      {/* Cart Link (Always visible for both user & guest) */}
-      <Link
-        href="/cart"
-        className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-text-muted hover:text-primary hover:bg-primary-light/10 transition-all duration-200"
-        aria-label="Keranjang Belanja"
-      >
-        <ShoppingCart size={20} />
-        {cartCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-accent text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-scale-in">
-            {cartCount}
-          </span>
-        )}
-      </Link>
+      {/* Cart Link — only for authenticated users */}
+      {user && (
+        <Link
+          href="/cart"
+          className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-text-muted hover:text-primary hover:bg-primary-light/10 transition-all duration-200"
+          aria-label="Keranjang Belanja"
+        >
+          <ShoppingCart size={20} />
+          {cartCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-accent text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-scale-in">
+              {cartCount}
+            </span>
+          )}
+        </Link>
+      )}
 
       {/* Auth Control */}
       {!user ? (
