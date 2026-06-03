@@ -51,11 +51,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   if (error || !product) notFound();
 
   // Fetch reviews via admin client so ALL reviews are publicly visible
-const { data: reviewsData } = await supabase
-  .from("reviews")
-  .select("*, user:user_profiles(full_name)")
-  .eq("product_id", id)
-  .order("created_at", { ascending: false });
+  const { data: reviewsData } = await supabaseAdmin
+    .from("reviews")
+    .select("*, user:user_profiles(full_name)")
+    .eq("product_id", id)
+    .order("created_at", { ascending: false });
 
   const reviews = (reviewsData as any[]) ?? [];
   const avgRating = reviews.length > 0
