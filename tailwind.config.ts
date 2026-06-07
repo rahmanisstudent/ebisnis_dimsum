@@ -10,23 +10,23 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#4A7C59",
-          dark: "#3A6347",
-          light: "#E8F0E4",
+          DEFAULT: "#c0392b",
+          dark: "#a93226",
+          light: "#fef2f2",
         },
         accent: {
-          DEFAULT: "#E8773A",
-          light: "#FFF0E6",
+          DEFAULT: "#f5a623",
+          light: "#fff8ec",
         },
-        cream: "#FDF8F3",
+        cream: "#fdf6f0",
         surface: {
           DEFAULT: "#ffffff",
-          soft: "#FAF6F1",
+          soft: "#faf6f1",
         },
-        "border-soft": "#EDE8E3",
-        "text-main": "#2D2A26",
-        "text-muted": "#8A857E",
-        "warm-dark": "#2C2825",
+        "border-soft": "#f0e8e4",
+        "text-main": "#1a1a1a",
+        "text-muted": "#6b6560",
+        "warm-dark": "#1a0f0d",
       },
       fontFamily: {
         sans: ["var(--font-poppins)", "ui-sans-serif", "system-ui", "sans-serif"],

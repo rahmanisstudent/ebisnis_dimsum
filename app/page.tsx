@@ -5,8 +5,9 @@ import { ProductSkeletonGrid } from "@/components/product-skeleton";
 import CategoryFilter from "@/components/category-filter";
 import ProductSearch from "@/components/product-search";
 import NavbarCart from "@/components/navbar-cart";
+import SharedFooter from "@/components/shared-footer";
 import type { Product, Category } from "@/types";
-import { ArrowRight, ChefHat, Tag } from "lucide-react";
+import { ArrowRight, ChefHat, Package, Tag } from "lucide-react";
 
 // ─── Product Grid ─────────────────────────────────────────────────────────────
 async function ProductGrid({ category, search }: { category: string; search: string }) {
@@ -39,7 +40,9 @@ async function ProductGrid({ category, search }: { category: string; search: str
   if (!productList || productList.length === 0) {
     return (
       <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "5rem 0", textAlign: "center" }}>
-        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🥟</div>
+        <div style={{ width: 56, height: 56, background: "#fef2f2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
+          <Package size={24} color="#c0392b" />
+        </div>
         <p style={{ fontWeight: 700, color: "#1a1a1a" }}>Belum ada produk di kategori ini.</p>
         <p style={{ color: "#aaa", fontSize: "0.875rem", marginTop: "0.25rem" }}>Coba pilih kategori lain.</p>
       </div>
@@ -101,8 +104,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <header style={s.navHeader}>
         <div style={s.navInner}>
           <a href="/" style={s.logo}>
-            <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>🥟</span>
-            <span style={{ fontSize: "1.2rem", fontWeight: 800, letterSpacing: "-0.4px" }}>
+            <ChefHat size={22} color="#c0392b" strokeWidth={2.5} />
+            <span style={{ fontSize: "1.15rem", fontWeight: 800, letterSpacing: "-0.4px" }}>
               <span style={{ color: "#c0392b" }}>Dimsum</span>
               <span style={{ color: "#2d2a26" }}>Store</span>
             </span>
@@ -185,50 +188,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       </div>
 
-      {/* ── Footer ──────────────────────────────────────────────────────────── */}
-      <footer style={s.footer}>
-        <div style={s.footerInner}>
-          <div style={s.footerTop}>
-            {/* Brand */}
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                <span style={{ fontSize: "1.4rem" }}>🥟</span>
-                <span style={{ fontWeight: 800, fontSize: "1.1rem" }}>
-                  <span style={{ color: "#fff" }}>Dimsum</span>
-                  <span style={{ color: "#f5a623" }}>Store</span>
-                </span>
-              </div>
-              <p style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", maxWidth: "200px", lineHeight: 1.6 }}>
-                Fresh, hot, and undeniably cute. Premium dimsum experience.
-              </p>
-            </div>
-
-            {/* Nav links */}
-            <div style={s.footerLinks}>
-              <p style={s.footerLinkHeading}>Navigasi</p>
-              {[
-                { href: "/", label: "Menu" },
-                { href: "/cart", label: "Keranjang" },
-                { href: "/orders", label: "Pesanan" },
-                { href: "/orders/track", label: "Lacak Pesanan" },
-              ].map(({ href, label }) => (
-                <a key={href} href={href} style={s.footerLink}>{label}</a>
-              ))}
-            </div>
-
-            {/* Legal */}
-            <div style={s.footerLinks}>
-              <p style={s.footerLinkHeading}>Legal</p>
-              <a href="/privacy-policy" style={s.footerLink}>Kebijakan Privasi</a>
-            </div>
-          </div>
-
-          <div style={s.footerDivider} />
-          <p style={s.footerCopy}>
-            © {new Date().getFullYear()} DimsumStore. Semua hak dilindungi.
-          </p>
-        </div>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }

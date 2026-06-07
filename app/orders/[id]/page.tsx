@@ -5,9 +5,10 @@ import Image from "next/image";
 import { formatPrice, getProductImageUrl } from "@/lib/utils";
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/constants";
 import type { OrderWithItems } from "@/types";
-import { ArrowLeft, Package } from "lucide-react";
+import { ArrowLeft, Package, ChefHat } from "lucide-react";
 import NavbarCart from "@/components/navbar-cart";
 import OrderItemReview from "@/components/order-item-review";
+import SharedFooter from "@/components/shared-footer";
 
 interface OrderDetailPageProps {
   params: Promise<{ id: string }>;
@@ -37,9 +38,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const discountAmount = o.discount_amount ?? 0;
 
   return (
-    <div className="min-h-screen">
-      <header className="glass-header sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="min-h-screen" style={{ background: "#fdf6f0" }}>
+      <header style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottom: "1px solid #f0e8e4", boxShadow: "0 1px 8px rgba(180,60,40,0.06)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem", height: "62px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/orders" className="flex items-center gap-2 text-text-muted hover:text-primary text-sm font-medium transition-colors duration-200">
             <ArrowLeft size={16} /> Pesanan Saya
           </Link>
@@ -127,6 +128,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           </a>
         </div>
       </main>
+      <SharedFooter />
     </div>
   );
 }

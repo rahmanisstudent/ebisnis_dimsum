@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trash2, Minus, Plus, ArrowRight, PackageOpen, Loader2, CheckSquare, Square } from "lucide-react";
+import { Trash2, Minus, Plus, ArrowRight, PackageOpen, Loader2, CheckSquare, Square, ChefHat, ShoppingCart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice, getProductImageUrl, cn } from "@/lib/utils";
 import type { CartItem, Product, ProductVariant } from "@/types";
 import NavbarCart from "@/components/navbar-cart";
+import SharedFooter from "@/components/shared-footer";
 
 interface CartItemWithProduct extends Omit<CartItem, "variant"> {
   product: Product;
@@ -242,68 +243,68 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 size={32} style={{ color: "#c0392b", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="glass-header sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="text-2xl">🥟</span>
-            <span className="font-extrabold text-xl tracking-tight">
-              <span className="text-primary">DimSum</span>
-              <span className="text-accent">Store</span>
+    <div style={{ minHeight: "100vh", background: "#fdf6f0" }}>
+      {/* Navbar */}
+      <header style={navStyle.header}>
+        <div style={navStyle.inner}>
+          <a href="/" style={navStyle.logo}>
+            <ChefHat size={22} color="#c0392b" strokeWidth={2.5} />
+            <span style={{ fontSize: "1.15rem", fontWeight: 800, letterSpacing: "-0.4px" }}>
+              <span style={{ color: "#c0392b" }}>Dimsum</span>
+              <span style={{ color: "#2d2a26" }}>Store</span>
             </span>
-          </Link>
+          </a>
           <NavbarCart />
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-text-main mb-6">
-          🛒 Keranjang Belanja
+      <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1.5rem" }}>
+        <h1 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#1a1a1a", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <ShoppingCart size={24} color="#c0392b" />
+          Keranjang Belanja
         </h1>
 
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-24 h-24 bg-primary-light rounded-full flex items-center justify-center mb-6">
-              <PackageOpen className="text-primary" size={40} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "6rem 0", textAlign: "center" }}>
+            <div style={{ width: 88, height: 88, background: "#fef2f2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.5rem" }}>
+              <PackageOpen size={40} color="#c0392b" />
             </div>
-            <h2 className="text-xl font-bold text-text-main mb-2">Keranjang kamu kosong</h2>
-            <p className="text-text-muted text-sm mb-8">Yuk, tambahkan dimsum favorit kamu!</p>
-            <Link
-              href="/"
-              className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-2xl transition-all duration-300 shadow-lg shadow-primary/20"
-            >
-              Lihat Menu
-            </Link>
+            <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#1a1a1a", marginBottom: "0.5rem" }}>Keranjang kamu kosong</h2>
+            <p style={{ color: "#6b6560", fontSize: "0.875rem", marginBottom: "2rem" }}>Yuk, tambahkan dimsum favorit kamu!</p>
+            <Link href="/" style={btn.primary}>Lihat Menu</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 flex flex-col gap-3">
-              <div className="surface-card px-4 py-3 flex items-center justify-between">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1.5rem" }}>
+            {/* Items column */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {/* Select all bar */}
+              <div style={{ background: "#fff", border: "1px solid #f0e8e4", borderRadius: "0.75rem", padding: "0.75rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <button
                   onClick={toggleAll}
-                  className="flex items-center gap-2.5 text-sm font-semibold text-text-main hover:text-primary transition-colors duration-200"
+                  style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.875rem", fontWeight: 600, color: "#1a1a1a", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                 >
                   {allSelected ? (
-                    <CheckSquare size={20} className="text-primary" />
+                    <CheckSquare size={20} color="#c0392b" />
                   ) : (
-                    <Square size={20} className="text-border-soft" />
+                    <Square size={20} color="#d4c9c4" />
                   )}
                   {allSelected ? "Batal Pilih Semua" : "Pilih Semua"}
                 </button>
                 {!noneSelected && (
-                  <span className="text-xs text-text-muted font-medium">
+                  <span style={{ fontSize: "0.75rem", color: "#6b6560", fontWeight: 500 }}>
                     {selectedIds.size} dari {items.length} item dipilih
                   </span>
                 )}
               </div>
 
+              {/* Item cards */}
               {items.map((item) => {
                 const isUpdating = updatingId === item.id;
                 const isSelected = selectedIds.has(item.id);
@@ -314,76 +315,81 @@ export default function CartPage() {
                 return (
                   <div
                     key={item.id}
-                    className={cn(
-                      "surface-card p-4 flex gap-3 transition-all duration-200",
-                      isSelected ? "border-primary/30 shadow-sm" : "border-border-soft opacity-60",
-                      isUpdating && "opacity-50"
-                    )}
+                    style={{
+                      background: "#fff",
+                      border: `1px solid ${isSelected ? "rgba(192,57,43,0.25)" : "#f0e8e4"}`,
+                      borderRadius: "0.75rem",
+                      padding: "1rem",
+                      display: "flex",
+                      gap: "0.75rem",
+                      opacity: isUpdating ? 0.5 : isSelected ? 1 : 0.6,
+                      transition: "all 0.2s",
+                    }}
                   >
-                    <button onClick={() => toggleItem(item.id)} className="shrink-0 mt-1">
+                    <button onClick={() => toggleItem(item.id)} style={{ flexShrink: 0, marginTop: 2, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                       {isSelected ? (
-                        <CheckSquare size={20} className="text-primary" />
+                        <CheckSquare size={20} color="#c0392b" />
                       ) : (
-                        <Square size={20} className="text-border-soft" />
+                        <Square size={20} color="#d4c9c4" />
                       )}
                     </button>
 
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-cream shrink-0">
+                    <div style={{ position: "relative", width: 80, height: 80, borderRadius: "0.75rem", overflow: "hidden", background: "#fdf6f0", flexShrink: 0 }}>
                       <Image
                         src={getProductImageUrl(item.product.image_url)}
                         alt={item.product.name}
                         fill
-                        sizes="96px"
-                        className="object-cover"
+                        sizes="80px"
+                        style={{ objectFit: "cover" }}
                       />
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem" }}>
                         <div>
-                          <h3 className="font-bold text-text-main text-sm leading-snug line-clamp-2">
+                          <h3 style={{ fontWeight: 700, color: "#1a1a1a", fontSize: "0.875rem", lineHeight: 1.4 }}>
                             {item.product.name}
                             {item.variant && (
-                              <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-primary-light text-primary-dark border border-primary/20">
+                              <span style={{ marginLeft: 6, display: "inline-flex", alignItems: "center", padding: "1px 6px", borderRadius: 4, fontSize: "0.7rem", fontWeight: 700, background: "#fef2f2", color: "#c0392b", border: "1px solid rgba(192,57,43,0.2)" }}>
                                 {item.variant.name}
                               </span>
                             )}
                           </h3>
-                          <span className="text-xs text-text-muted mt-0.5 block">
+                          <span style={{ fontSize: "0.75rem", color: "#6b6560", marginTop: 2, display: "block" }}>
                             {item.product.category}
                           </span>
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
                           disabled={isUpdating}
-                          className="text-border-soft hover:text-red-500 transition-colors duration-200 shrink-0 p-1"
+                          style={{ color: "#d4c9c4", background: "none", border: "none", cursor: "pointer", padding: 4, flexShrink: 0 }}
                           aria-label="Hapus"
                         >
                           <Trash2 size={16} />
                         </button>
                       </div>
 
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center border border-border-soft rounded-2xl overflow-hidden bg-white">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.75rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", border: "1px solid #f0e8e4", borderRadius: "50px", overflow: "hidden", background: "#fff" }}>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 1 || isUpdating}
-                            className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", color: "#6b6560", background: "none", border: "none", cursor: item.quantity <= 1 ? "not-allowed" : "pointer", opacity: item.quantity <= 1 ? 0.35 : 1 }}
                           >
                             <Minus size={13} />
                           </button>
-                          <span className="w-8 text-center text-sm font-bold text-text-main">
+                          <span style={{ width: 28, textAlign: "center", fontSize: "0.875rem", fontWeight: 700, color: "#1a1a1a" }}>
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             disabled={item.quantity >= maxQty || isUpdating}
-                            className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                            style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", color: "#6b6560", background: "none", border: "none", cursor: item.quantity >= maxQty ? "not-allowed" : "pointer", opacity: item.quantity >= maxQty ? 0.35 : 1 }}
                           >
                             <Plus size={13} />
                           </button>
                         </div>
-                        <span className="font-extrabold text-accent text-sm">
+                        <span style={{ fontWeight: 800, color: "#f5a623", fontSize: "0.9rem" }}>
                           {formatPrice(activePrice * item.quantity)}
                         </span>
                       </div>
@@ -392,31 +398,32 @@ export default function CartPage() {
                 );
               })}
 
-              <Link href="/" className="flex items-center gap-2 text-primary font-semibold text-sm hover:underline mt-1">
+              <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "#c0392b", fontWeight: 600, fontSize: "0.875rem", textDecoration: "none", marginTop: "0.25rem" }}>
                 + Tambah item lain
               </Link>
             </div>
 
-            <div className="lg:col-span-1">
-              <div className="surface-card p-6 sticky top-24">
-                <h2 className="font-extrabold text-text-main text-lg mb-5">Ringkasan Pesanan</h2>
+            {/* Order summary */}
+            <div>
+              <div style={{ background: "#fff", border: "1px solid #f0e8e4", borderRadius: "1rem", padding: "1.5rem", position: "sticky", top: "80px" }}>
+                <h2 style={{ fontWeight: 800, color: "#1a1a1a", fontSize: "1.1rem", marginBottom: "1.25rem" }}>Ringkasan Pesanan</h2>
                 {noneSelected ? (
-                  <p className="text-sm text-text-muted text-center py-4">Pilih minimal 1 item untuk melanjutkan</p>
+                  <p style={{ fontSize: "0.875rem", color: "#6b6560", textAlign: "center", padding: "1rem 0" }}>Pilih minimal 1 item untuk melanjutkan</p>
                 ) : (
-                  <div className="flex flex-col gap-3 text-sm">
-                    <div className="text-xs text-text-muted mb-1">{selectedIds.size} item dipilih</div>
-                    <div className="flex justify-between text-text-muted">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.875rem" }}>
+                    <div style={{ fontSize: "0.75rem", color: "#6b6560", marginBottom: 2 }}>{selectedIds.size} item dipilih</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#6b6560" }}>
                       <span>Subtotal</span>
-                      <span className="font-semibold text-text-main">{formatPrice(subtotal)}</span>
+                      <span style={{ fontWeight: 600, color: "#1a1a1a" }}>{formatPrice(subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-text-muted">
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#6b6560" }}>
                       <span>Ongkos Kirim</span>
-                      <span className="font-medium text-text-muted text-xs italic">Akan dihitung saat checkout</span>
+                      <span style={{ fontWeight: 500, color: "#6b6560", fontSize: "0.75rem", fontStyle: "italic" }}>Akan dihitung saat checkout</span>
                     </div>
-                    <div className="border-t border-dashed border-border-soft my-1" />
-                    <div className="flex justify-between text-text-main font-extrabold text-base">
+                    <div style={{ borderTop: "1px dashed #f0e8e4", margin: "0.25rem 0" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#1a1a1a", fontWeight: 800, fontSize: "1rem" }}>
                       <span>Total Sementara</span>
-                      <span className="text-accent">{formatPrice(subtotal)}</span>
+                      <span style={{ color: "#f5a623" }}>{formatPrice(subtotal)}</span>
                     </div>
                   </div>
                 )}
@@ -424,26 +431,86 @@ export default function CartPage() {
                 <button
                   onClick={handleCheckout}
                   disabled={noneSelected}
-                  className={cn(
-                    "w-full mt-6 flex items-center justify-center gap-2 font-bold py-4 rounded-2xl transition-all duration-300",
-                    noneSelected
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0"
-                  )}
+                  style={{
+                    width: "100%",
+                    marginTop: "1.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    fontWeight: 700,
+                    padding: "1rem",
+                    borderRadius: "50px",
+                    border: "none",
+                    cursor: noneSelected ? "not-allowed" : "pointer",
+                    fontSize: "0.9rem",
+                    background: noneSelected ? "#f0e8e4" : "linear-gradient(135deg, #c0392b 0%, #e74c3c 100%)",
+                    color: noneSelected ? "#aaa" : "#fff",
+                    boxShadow: noneSelected ? "none" : "0 4px 14px rgba(192,57,43,0.35)",
+                    transition: "all 0.2s",
+                  }}
                 >
                   Lanjut ke Pembayaran
                   {!noneSelected && (
-                    <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">{selectedIds.size}</span>
+                    <span style={{ background: "rgba(255,255,255,0.2)", fontSize: "0.75rem", padding: "2px 8px", borderRadius: 99 }}>{selectedIds.size}</span>
                   )}
                   <ArrowRight size={18} />
                 </button>
 
-                <p className="text-center text-xs text-text-muted mt-3">Pembayaran aman via Midtrans 🔒</p>
+                <p style={{ textAlign: "center", fontSize: "0.75rem", color: "#6b6560", marginTop: "0.75rem" }}>Pembayaran aman via Midtrans</p>
               </div>
             </div>
           </div>
         )}
       </main>
+
+      <SharedFooter />
     </div>
   );
 }
+
+const navStyle: Record<string, React.CSSProperties> = {
+  header: {
+    position: "sticky",
+    top: 0,
+    zIndex: 50,
+    backgroundColor: "rgba(255,255,255,0.96)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    borderBottom: "1px solid #f0e8e4",
+    boxShadow: "0 1px 8px rgba(180,60,40,0.06)",
+  },
+  inner: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "0 1.5rem",
+    height: "62px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "1.25rem",
+  },
+  logo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    textDecoration: "none",
+    flexShrink: 0,
+  },
+};
+
+const btn: Record<string, React.CSSProperties> = {
+  primary: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.4rem",
+    background: "linear-gradient(135deg, #c0392b 0%, #e74c3c 100%)",
+    color: "#fff",
+    fontWeight: 700,
+    fontSize: "0.875rem",
+    padding: "0.75rem 2rem",
+    borderRadius: "50px",
+    textDecoration: "none",
+    boxShadow: "0 4px 14px rgba(192,57,43,0.35)",
+  },
+};

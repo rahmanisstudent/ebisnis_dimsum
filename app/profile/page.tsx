@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Mail, Phone, MapPin, Save, Loader2, ArrowLeft, CheckCircle2, Navigation } from "lucide-react";
+import { User, Mail, Phone, MapPin, Save, Loader2, ArrowLeft, CheckCircle2, Navigation, ChefHat } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { UserProfile } from "@/types";
 import NavbarCart from "@/components/navbar-cart";
@@ -175,13 +175,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <header className="glass-header sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="text-2xl">🥟</span>
-            <span className="font-extrabold text-xl tracking-tight">
-              <span className="text-primary">DimSum</span><span className="text-accent">Store</span>
+    <div className="min-h-screen" style={{ background: "#fdf6f0" }}>
+      <header style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottom: "1px solid #f0e8e4", boxShadow: "0 1px 8px rgba(180,60,40,0.06)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem", height: "62px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+            <ChefHat size={22} color="#c0392b" strokeWidth={2.5} />
+            <span style={{ fontSize: "1.15rem", fontWeight: 800, letterSpacing: "-0.4px" }}>
+              <span style={{ color: "#c0392b" }}>Dimsum</span>
+              <span style={{ color: "#2d2a26" }}>Store</span>
             </span>
           </Link>
           <NavbarCart />
@@ -194,8 +195,9 @@ export default function ProfilePage() {
           Kembali ke Menu
         </Link>
 
-        <h1 className="text-2xl md:text-3xl font-extrabold text-text-main mb-8">
-          👤 Profil Saya
+        <h1 className="text-2xl md:text-3xl font-extrabold text-text-main mb-8 flex items-center gap-2.5">
+          <User size={24} className="text-primary" />
+          Profil Saya
         </h1>
 
         <form onSubmit={handleSave} className="flex flex-col gap-6">

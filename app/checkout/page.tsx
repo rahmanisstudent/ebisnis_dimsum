@@ -15,6 +15,8 @@ import {
   Navigation,
   Ticket,
   ChevronDown,
+  ChefHat,
+  ClipboardList,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -483,9 +485,9 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <header className="glass-header sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="min-h-screen" style={{ background: "#fdf6f0" }}>
+      <header style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottom: "1px solid #f0e8e4", boxShadow: "0 1px 8px rgba(180,60,40,0.06)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem", height: "62px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div className="flex items-center gap-4">
             <Link
               href="/cart"
@@ -553,10 +555,8 @@ function CheckoutContent() {
             {/* Shipping Address Section */}
             <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
               <h2 className="font-extrabold text-text-main text-base mb-4 flex items-center gap-2">
-                <span className="inline-flex w-6 h-6 rounded-lg bg-primary/10 text-primary items-center justify-center text-xs font-black">
-                  {user ? "1" : "2"}
-                </span>
-                📍 Alamat Pengiriman
+                <span className="inline-flex w-6 h-6 rounded-lg bg-primary/10 text-primary items-center justify-center text-xs font-black">{user ? "1" : "2"}</span>
+                <MapPin size={16} className="text-primary" /> Alamat Pengiriman
               </h2>
 
               {editingAddress ? (

@@ -5,18 +5,24 @@
 /* ── CSS Variables ──────────────────────────────────────── */
 :root {
   --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #4a7c59;
-  --color-primary-dark: #3a6347;
-  --color-primary-light: #e8f0e4;
-  --color-accent: #e8773a;
-  --color-accent-light: #fff0e6;
-  --color-cream: #fdf8f3;
+  /* Primary: Red/Crimson — matches the Home page design */
+  --color-primary: #c0392b;
+  --color-primary-dark: #a93226;
+  --color-primary-light: #fef2f2;
+  /* Accent: Gold */
+  --color-accent: #f5a623;
+  --color-accent-light: #fff8ec;
+  /* Backgrounds */
+  --color-cream: #fdf6f0;
   --color-surface: #ffffff;
   --color-surface-soft: #faf6f1;
-  --color-border-soft: #ede8e3;
-  --color-text-main: #2d2a26;
-  --color-text-muted: #8a857e;
-  --color-warm-dark: #2c2825;
+  /* Borders */
+  --color-border-soft: #f0e8e4;
+  /* Text */
+  --color-text-main: #1a1a1a;
+  --color-text-muted: #6b6560;
+  /* Footer */
+  --color-warm-dark: #1a0f0d;
 }
 
 /* ── Base resets ────────────────────────────────────────── */
@@ -30,10 +36,7 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-sans);
-  background:
-    radial-gradient(ellipse at top right, #e8f0e4 0%, transparent 40%),
-    radial-gradient(ellipse at bottom left, #fff0e6 0%, transparent 40%),
-    #fdf8f3;
+  background: #fdf6f0;
   color: var(--color-text-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -58,10 +61,11 @@ img { max-width: 100%; display: block; }
 
 /* ── Glass header ───────────────────────────────────────── */
 .glass-header {
-  background-color: rgb(253 248 243 / 85%);
+  background-color: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-border-soft);
+  border-bottom: 1px solid #f0e8e4;
+  box-shadow: 0 1px 8px rgba(180, 60, 40, 0.06);
 }
 
 /* ── Surface card ───────────────────────────────────────── */
@@ -69,7 +73,7 @@ img { max-width: 100%; display: block; }
   background-color: var(--color-surface);
   border: 1px solid var(--color-border-soft);
   border-radius: 1rem;
-  box-shadow: 0 4px 24px -8px rgb(45 42 38 / 8%);
+  box-shadow: 0 4px 24px -8px rgba(180, 60, 40, 0.08);
 }
 
 /* ── Animations ─────────────────────────────────────────── */
@@ -83,3 +87,9 @@ img { max-width: 100%; display: block; }
   to { transform: rotate(360deg); }
 }
 .animate-spin { animation: spin 1s linear infinite; }
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in { animation: scale-in 0.15s ease-out forwards; }
