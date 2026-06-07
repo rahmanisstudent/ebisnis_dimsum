@@ -18,7 +18,6 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  // null = still checking, true/false = result
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   const router = useRouter();
@@ -103,7 +102,11 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
         }
 
         setStatus("success");
+
+        // ── Dispatch cart update event so NavbarCart badge updates immediately ──
+        window.dispatchEvent(new CustomEvent("cartUpdated"));
         router.refresh();
+
         setTimeout(() => setStatus("idle"), 2500);
       } catch (err) {
         setStatus("error");
@@ -123,37 +126,58 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
   // ── Loading skeleton while auth is checked ────────────────────────────────
   if (isLoggedIn === null) {
     return (
-      <div className="flex flex-col gap-5 animate-pulse">
-        <div className="flex items-center gap-4">
-          <div className="h-4 w-16 bg-gray-100 rounded" />
-          <div className="h-10 w-32 bg-gray-100 rounded-2xl" />
+      <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ height: 16, width: 64, background: "#f0e8e4", borderRadius: 8 }} />
+          <div style={{ height: 40, width: 128, background: "#f0e8e4", borderRadius: 12 }} />
         </div>
-        <div className="h-14 bg-gray-100 rounded-2xl" />
+        <div style={{ height: 56, background: "#f0e8e4", borderRadius: 16 }} />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Variants */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+      {/* ── Variant Selector ── */}
       {variants.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Pilih Varian</span>
-          <div className="flex flex-wrap gap-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+          <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6b6560", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            Pilih Varian
+          </span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
             {variants.map((v) => {
               const isSelected = selectedVariant?.id === v.id;
               const vOut = v.stock === 0;
               return (
-                <button key={v.id} type="button" disabled={vOut} onClick={() => setSelectedVariant(v)}
-                  className={cn(
-                    "px-4 py-2 text-xs font-semibold rounded-xl border transition-all duration-200 flex flex-col items-start gap-0.5",
-                    isSelected ? "border-primary bg-primary-light text-primary-dark"
-                      : vOut ? "border-border-soft bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
-                      : "border-border-soft hover:border-text-muted text-text-main bg-white"
-                  )}>
-                  <span className="font-bold">{v.name}</span>
-                  <span className="text-[10px] opacity-80">
-                    {v.price_adjustment !== 0 ? `${v.price_adjustment >= 0 ? "+" : ""}${formatPrice(v.price_adjustment)}` : "Harga Normal"}
+                <button
+                  key={v.id}
+                  type="button"
+                  disabled={vOut}
+                  onClick={() => setSelectedVariant(v)}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    fontSize: "0.8rem",
+                    fontWeight: isSelected ? 700 : 600,
+                    borderRadius: "10px",
+                    border: `1.5px solid ${isSelected ? "#c0392b" : "#f0e8e4"}`,
+                    background: isSelected ? "#fef2f2" : vOut ? "#f9f9f9" : "#fff",
+                    color: isSelected ? "#c0392b" : vOut ? "#bbb" : "#2d2a26",
+                    cursor: vOut ? "not-allowed" : "pointer",
+                    opacity: vOut ? 0.5 : 1,
+                    transition: "all 0.15s",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    gap: "0.125rem",
+                    textDecoration: "none",
+                  }}
+                >
+                  <span>{v.name}</span>
+                  <span style={{ fontSize: "0.68rem", opacity: 0.8 }}>
+                    {v.price_adjustment !== 0
+                      ? `${v.price_adjustment >= 0 ? "+" : ""}${formatPrice(v.price_adjustment)}`
+                      : "Harga Normal"}
                   </span>
                 </button>
               );
@@ -162,65 +186,127 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
         </div>
       )}
 
-      {/* Selected variant price */}
+      {/* ── Selected Variant Price Display ── */}
       {selectedVariant && (
-        <div className="bg-cream/50 rounded-2xl p-4 border border-border-soft/60">
-          <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Harga Varian Terpilih</p>
-          <p className="text-2xl font-black text-accent mt-0.5">{formatPrice(activePrice)}</p>
-          <p className="text-xs text-text-muted/80 mt-1">Stok: {activeStock} unit</p>
+        <div style={{ background: "#fdf6f0", borderRadius: "14px", padding: "1rem", border: "1px solid #f0e8e4" }}>
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6b6560", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            Harga Varian Terpilih
+          </p>
+          <p style={{ fontSize: "1.5rem", fontWeight: 900, color: "#c0392b", marginTop: "0.25rem" }}>
+            {formatPrice(activePrice)}
+          </p>
+          <p style={{ fontSize: "0.72rem", color: "#9ca3af", marginTop: "0.25rem" }}>
+            Stok: {activeStock} unit
+          </p>
         </div>
       )}
 
-      {/* Quantity */}
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-text-muted font-medium">Jumlah:</span>
-        <div className="flex items-center border border-border-soft rounded-2xl overflow-hidden bg-white">
-          <button type="button" onClick={decrement} disabled={quantity <= 1 || isOutOfStock}
-            className="w-10 h-10 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200">
+      {/* ── Quantity Selector ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <span style={{ fontSize: "0.875rem", color: "#6b6560", fontWeight: 500 }}>Jumlah:</span>
+        <div style={{ display: "flex", alignItems: "center", border: "1.5px solid #f0e8e4", borderRadius: "50px", overflow: "hidden", background: "#fff" }}>
+          <button
+            type="button"
+            onClick={decrement}
+            disabled={quantity <= 1 || isOutOfStock}
+            style={{
+              width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "none", border: "none", cursor: quantity <= 1 ? "not-allowed" : "pointer",
+              color: "#6b6560", opacity: quantity <= 1 || isOutOfStock ? 0.3 : 1, transition: "all 0.15s",
+            }}
+          >
             <Minus size={15} />
           </button>
-          <span className="w-10 text-center font-bold text-text-main text-sm">{quantity}</span>
-          <button type="button" onClick={increment} disabled={quantity >= maxQty || isOutOfStock}
-            className="w-10 h-10 flex items-center justify-center text-text-muted hover:bg-primary-light hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200">
+          <span style={{ width: 40, textAlign: "center", fontSize: "0.9rem", fontWeight: 700, color: "#1a1a1a" }}>
+            {quantity}
+          </span>
+          <button
+            type="button"
+            onClick={increment}
+            disabled={quantity >= maxQty || isOutOfStock}
+            style={{
+              width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "none", border: "none", cursor: quantity >= maxQty ? "not-allowed" : "pointer",
+              color: "#6b6560", opacity: quantity >= maxQty || isOutOfStock ? 0.3 : 1, transition: "all 0.15s",
+            }}
+          >
             <Plus size={15} />
           </button>
         </div>
       </div>
 
-      {/* Error */}
+      {/* ── Error message ── */}
       {status === "error" && errorMsg && (
-        <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm px-4 py-2.5 rounded-2xl border border-red-200">
-          <AlertCircle size={15} className="shrink-0" />{errorMsg}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "#fef2f2", color: "#dc2626", fontSize: "0.875rem", padding: "0.625rem 1rem", borderRadius: "12px", border: "1px solid #fecaca" }}>
+          <AlertCircle size={15} style={{ flexShrink: 0 }} />{errorMsg}
         </div>
       )}
 
-      {/* ── Main button: Add to Cart (auth) or Buy Now (guest) ── */}
+      {/* ── Main CTA ── */}
       {isLoggedIn ? (
-        <button onClick={handleAddToCart} disabled={isOutOfStock || isPending}
-          className={cn(
-            "w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-bold text-base transition-all duration-300",
-            isOutOfStock ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : status === "success" ? "bg-green-500 text-white shadow-lg shadow-green-200"
-              : "bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0"
-          )}>
-          {isPending ? <><Loader2 size={18} className="animate-spin" />Menambahkan...</>
-            : status === "success" ? <><CheckCircle2 size={18} />Ditambahkan ke Keranjang!</>
-            : <><ShoppingCart size={18} />{isOutOfStock ? "Stok Habis" : `Tambah ke Keranjang • ${formatPrice(quantity * activePrice)}`}</>}
+        <button
+          onClick={handleAddToCart}
+          disabled={isOutOfStock || isPending}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.625rem",
+            padding: "1rem 1.5rem",
+            borderRadius: "14px",
+            border: "none",
+            fontWeight: 700,
+            fontSize: "0.95rem",
+            cursor: isOutOfStock || isPending ? "not-allowed" : "pointer",
+            background: isOutOfStock
+              ? "#f0e8e4"
+              : status === "success"
+              ? "#22c55e"
+              : "linear-gradient(135deg, #c0392b 0%, #e74c3c 100%)",
+            color: isOutOfStock ? "#9ca3af" : "#fff",
+            boxShadow: isOutOfStock ? "none" : status === "success" ? "0 4px 14px rgba(34,197,94,0.3)" : "0 4px 14px rgba(192,57,43,0.35)",
+            transition: "all 0.25s",
+            transform: "translateY(0)",
+          }}
+        >
+          {isPending ? (
+            <><Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />Menambahkan...</>
+          ) : status === "success" ? (
+            <><CheckCircle2 size={18} />Ditambahkan ke Keranjang!</>
+          ) : (
+            <><ShoppingCart size={18} />{isOutOfStock ? "Stok Habis" : `Tambah ke Keranjang • ${formatPrice(quantity * activePrice)}`}</>
+          )}
         </button>
       ) : (
-        <div className="flex flex-col gap-3">
-          <button onClick={handleBuyNow} disabled={isOutOfStock}
-            className={cn(
-              "w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-bold text-base transition-all duration-300",
-              isOutOfStock ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-accent hover:bg-orange-600 text-white shadow-lg shadow-accent/20 hover:shadow-accent/30 hover:-translate-y-0.5 active:translate-y-0"
-            )}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <button
+            onClick={handleBuyNow}
+            disabled={isOutOfStock}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.625rem",
+              padding: "1rem 1.5rem",
+              borderRadius: "14px",
+              border: "none",
+              fontWeight: 700,
+              fontSize: "0.95rem",
+              cursor: isOutOfStock ? "not-allowed" : "pointer",
+              background: isOutOfStock ? "#f0e8e4" : "linear-gradient(135deg, #f5a623 0%, #f08c00 100%)",
+              color: isOutOfStock ? "#9ca3af" : "#fff",
+              boxShadow: isOutOfStock ? "none" : "0 4px 14px rgba(245,166,35,0.35)",
+              transition: "all 0.25s",
+            }}
+          >
             <Zap size={18} />
             {isOutOfStock ? "Stok Habis" : `Beli Sekarang • ${formatPrice(quantity * activePrice)}`}
           </button>
-          <p className="text-center text-xs text-text-muted">
+          <p style={{ textAlign: "center", fontSize: "0.8rem", color: "#6b6560" }}>
             Punya akun?{" "}
-            <a href="/login" className="text-primary font-semibold hover:underline">Masuk</a>
+            <a href="/login" style={{ color: "#c0392b", fontWeight: 700, textDecoration: "none" }}>Masuk</a>
             {" "}untuk tambah ke keranjang & simpan riwayat pesanan.
           </p>
         </div>

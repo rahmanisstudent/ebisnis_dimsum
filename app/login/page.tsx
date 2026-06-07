@@ -3,7 +3,7 @@
 import { useState, useTransition, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Loader2, ArrowRight, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowRight, Mail, Lock, User, ChefHat } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -75,17 +75,17 @@ function LoginForm() {
           <div style={styles.blob2} />
           <div style={styles.leftContent}>
             <a href="/" style={styles.brandLink}>
-              <span style={styles.brandIcon}></span>
+              <ChefHat size={20} color="#7a1a0e" strokeWidth={2.5} />
               <span style={styles.brandName}>DimsumStore</span>
             </a>
             <div style={styles.illustrationRing}>
               <div style={styles.illustrationInner}>
-                <span style={styles.dimsumEmoji}>🥟</span>
+                <ChefHat size={42} color="#c0392b" strokeWidth={1.75} />
               </div>
             </div>
             <p style={styles.tagline}>
-              Fresh, hot, and undeniably cute.<br />
-              Your premium dumpling experience starts here.
+              Fresh, hot, and undeniably delicious.<br />
+              Your premium dimsum experience starts here.
             </p>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Mail, Loader2, ArrowLeft, KeyRound } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, KeyRound, ChefHat } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
@@ -26,9 +26,11 @@ export default function ResetPasswordPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#fdf6f0" }}>
         <div className="w-full max-w-md text-center surface-card rounded-3xl p-10">
-          <div className="text-5xl mb-4">📧</div>
+          <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
+            <Mail size={32} color="#c0392b" strokeWidth={1.75} />
+          </div>
           <h2 className="text-2xl font-extrabold text-text-main mb-2">Cek Email Kamu!</h2>
           <p className="text-text-muted text-sm leading-relaxed">
             Kami telah mengirim link reset password ke <span className="font-semibold text-text-main">{email}</span>.
@@ -42,12 +44,12 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#fdf6f0" }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <a href="/" className="inline-flex items-center gap-2 justify-center">
-            <span className="text-3xl">🥟</span>
-            <span className="font-extrabold text-2xl"><span className="text-primary">DimSum</span><span className="text-accent">Store</span></span>
+          <a href="/" className="inline-flex items-center gap-2 justify-center" style={{ textDecoration: "none" }}>
+            <ChefHat size={28} color="#c0392b" strokeWidth={2.5} />
+            <span style={{ fontWeight: 800, fontSize: "1.4rem" }}><span style={{ color: "#c0392b" }}>Dimsum</span><span style={{ color: "#2d2a26" }}>Store</span></span>
           </a>
         </div>
         <div className="surface-card rounded-3xl p-8">

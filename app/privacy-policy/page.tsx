@@ -1,5 +1,6 @@
 import NavbarCart from "@/components/navbar-cart";
-import { Shield, Eye, Lock, FileText } from "lucide-react";
+import SharedFooter from "@/components/shared-footer";
+import { Shield, Eye, Lock, FileText, ChefHat } from "lucide-react";
 
 export const metadata = {
   title: "Kebijakan Privasi — DimsumStore",
@@ -8,15 +9,15 @@ export const metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen" style={{ background: "#fdf6f0" }}>
       {/* ─── Header ────────────────────────────────────────────────────── */}
-      <header className="glass-header sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2.5">
-            <span className="text-2xl">🥟</span>
-            <span className="font-extrabold text-xl tracking-tight">
-              <span className="text-primary">DimSum</span>
-              <span className="text-accent">Store</span>
+      <header style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottom: "1px solid #f0e8e4", boxShadow: "0 1px 8px rgba(180,60,40,0.06)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.5rem", height: "62px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+            <ChefHat size={22} color="#c0392b" strokeWidth={2.5} />
+            <span style={{ fontSize: "1.15rem", fontWeight: 800, letterSpacing: "-0.4px" }}>
+              <span style={{ color: "#c0392b" }}>Dimsum</span>
+              <span style={{ color: "#2d2a26" }}>Store</span>
             </span>
           </a>
           <NavbarCart />
@@ -119,10 +120,7 @@ export default function PrivacyPolicyPage() {
         </div>
       </main>
 
-      {/* ─── Footer ─────────────────────────────────────────────────────── */}
-      <footer className="bg-warm-dark text-white/50 border-t border-gray-200 mt-12 py-8 text-center text-xs">
-        <p>© {new Date().getFullYear()} DimsumStore. Semua hak dilindungi. Kebijakan Privasi Yogyakarta.</p>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }

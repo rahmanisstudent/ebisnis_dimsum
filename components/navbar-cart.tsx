@@ -77,6 +77,33 @@ export default function NavbarCart() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
+  // Re-fetch cart count when cartUpdated event fires (for logged-in users)
+  useEffect(() => {
+    if (!user || loading) return;
+
+    async function refreshAuthCartCount() {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return;
+
+      const { data: cart } = await supabase
+        .from("carts")
+        .select("id")
+        .eq("user_id", currentUser.id)
+        .single();
+
+      if (cart) {
+        const { count } = await supabase
+          .from("cart_items")
+          .select("*", { count: "exact", head: true })
+          .eq("cart_id", cart.id);
+        setCartCount(count ?? 0);
+      }
+    }
+
+    window.addEventListener("cartUpdated", refreshAuthCartCount);
+    return () => window.removeEventListener("cartUpdated", refreshAuthCartCount);
+  }, [user, loading, supabase]);
+
   // Sync guest cart count if guest checkout is running
   useEffect(() => {
     if (!user && !loading) {

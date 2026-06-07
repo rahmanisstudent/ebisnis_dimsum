@@ -3,19 +3,33 @@ import { SearchX } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center">
-        <div className="text-7xl mb-4">🥟</div>
-        <h1 className="text-5xl font-extrabold text-text-main mb-2">404</h1>
-        <h2 className="text-xl font-bold text-text-main mb-3">
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fdf6f0", padding: "1.5rem", fontFamily: "var(--font-sans)" }}>
+      <div style={{ width: "100%", maxWidth: "400px", textAlign: "center" }}>
+        <div style={{ width: 96, height: 96, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+          <SearchX size={44} color="#c0392b" strokeWidth={1.75} />
+        </div>
+        <h1 style={{ fontSize: "3.5rem", fontWeight: 900, color: "#1a1a1a", marginBottom: "0.5rem", lineHeight: 1 }}>404</h1>
+        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1a1a1a", marginBottom: "0.75rem" }}>
           Halaman Tidak Ditemukan
         </h2>
-        <p className="text-text-muted text-sm mb-8 leading-relaxed">
-          Sepertinya dimsum yang kamu cari sudah habis! Halaman ini tidak tersedia atau sudah dipindahkan.
+        <p style={{ color: "#6b6560", fontSize: "0.875rem", marginBottom: "2rem", lineHeight: 1.6 }}>
+          Sepertinya halaman yang kamu cari sudah tidak tersedia atau telah dipindahkan.
         </p>
         <Link
           href="/"
-          className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-2xl transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            background: "linear-gradient(135deg, #c0392b 0%, #e74c3c 100%)",
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: "0.9rem",
+            padding: "0.875rem 2rem",
+            borderRadius: "50px",
+            textDecoration: "none",
+            boxShadow: "0 4px 14px rgba(192,57,43,0.35)",
+          }}
         >
           Kembali ke Menu
         </Link>

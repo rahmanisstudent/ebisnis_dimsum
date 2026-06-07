@@ -2,32 +2,35 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { Category } from "@/types";
+import { Utensils, Flame, Snowflake, Coffee, LayoutGrid } from "lucide-react";
 
 interface CategoryFilterProps {
   categories: Category[];
 }
 
-// Warna latar icon per kategori
+// Lucide icons per category — no emojis
+const categoryIcons: Record<string, React.ReactNode> = {
+  Kukus: <Utensils size={18} strokeWidth={2} />,
+  Goreng: <Flame size={18} strokeWidth={2} />,
+  Frozen: <Snowflake size={18} strokeWidth={2} />,
+  Minuman: <Coffee size={18} strokeWidth={2} />,
+  Semua: <LayoutGrid size={18} strokeWidth={2} />,
+};
+
 const iconBgColors: Record<string, string> = {
-  "Kukus":        "#fff0eb",
-  "Goreng":       "#fff4e0",
-  "Frozen":       "#eef2ff",
-  "Minuman":      "#f0fdf4",
-  "Semua":        "#fff0eb",
+  Kukus: "#fff0eb",
+  Goreng: "#fff4e0",
+  Frozen: "#eef2ff",
+  Minuman: "#f0fdf4",
+  Semua: "#fef2f2",
 };
+
 const iconColors: Record<string, string> = {
-  "Kukus":        "#e87d6e",
-  "Goreng":       "#f59e0b",
-  "Frozen":       "#818cf8",
-  "Minuman":      "#22c55e",
-  "Semua":        "#c0392b",
-};
-const categoryEmojis: Record<string, string> = {
-  "Kukus":        "🥟",
-  "Goreng":       "🍳",
-  "Frozen":       "❄️",
-  "Minuman":      "🧋",
-  "Semua":        "🍽️",
+  Kukus: "#e87d6e",
+  Goreng: "#f59e0b",
+  Frozen: "#818cf8",
+  Minuman: "#22c55e",
+  Semua: "#c0392b",
 };
 
 export default function CategoryFilter({ categories }: CategoryFilterProps) {
@@ -48,30 +51,30 @@ export default function CategoryFilter({ categories }: CategoryFilterProps) {
   }
 
   const allItems = [
-    { label: "Semua", value: "", emoji: categoryEmojis["Semua"] },
+    { label: "Semua", value: "" },
     ...categories.map((cat) => ({
       label: cat.name,
       value: cat.name,
-      emoji: cat.emoji ?? categoryEmojis[cat.name] ?? "🥟",
     })),
   ];
 
   return (
     <div style={styles.wrap}>
-      {allItems.map(({ label, value, emoji }) => {
+      {allItems.map(({ label, value }) => {
         const isActive = activeCategory === value;
-        const bg = iconBgColors[label] ?? "#fff0eb";
+        const bg = iconBgColors[label] ?? "#fef2f2";
         const color = iconColors[label] ?? "#c0392b";
+        const icon = categoryIcons[label] ?? <Utensils size={18} strokeWidth={2} />;
 
         return (
           <button
             key={value || "all"}
             onClick={() => handleSelect(value)}
-            style={isActive ? { ...styles.card, ...styles.cardActive } : styles.card}
+            style={isActive ? { ...styles.card, ...styles.cardActive(color) } : styles.card}
           >
             {/* Icon circle */}
-            <div style={{ ...styles.iconCircle, background: isActive ? color : bg }}>
-              <span style={{ fontSize: "1.1rem", lineHeight: 1 }}>{emoji}</span>
+            <div style={{ ...styles.iconCircle, background: isActive ? color : bg, color: isActive ? "#fff" : color }}>
+              {icon}
             </div>
             {/* Label */}
             <span style={{ ...styles.label, color: isActive ? color : "#6b6560" }}>
@@ -84,7 +87,7 @@ export default function CategoryFilter({ categories }: CategoryFilterProps) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, any> = {
   wrap: {
     display: "flex",
     flexWrap: "wrap",
@@ -97,7 +100,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: "0.5rem",
     padding: "0.875rem 1.25rem",
-    minWidth: "90px",
+    minWidth: "88px",
     background: "#fff",
     border: "1.5px solid #f0e8e4",
     borderRadius: "14px",
@@ -105,11 +108,11 @@ const styles: Record<string, React.CSSProperties> = {
     transition: "all 0.15s ease",
     boxShadow: "0 1px 4px rgba(45,42,38,0.05)",
   },
-  cardActive: {
-    border: "1.5px solid #c0392b",
-    boxShadow: "0 2px 10px rgba(192,57,43,0.15)",
+  cardActive: (color: string): React.CSSProperties => ({
+    border: `1.5px solid ${color}`,
+    boxShadow: `0 2px 10px ${color}26`,
     background: "#fff8f6",
-  },
+  }),
   iconCircle: {
     width: "40px",
     height: "40px",
@@ -117,12 +120,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    transition: "background 0.15s",
-  },
+    transition: "background 0.15s, color 0.15s",
+  } as React.CSSProperties,
   label: {
     fontSize: "0.75rem",
     fontWeight: 600,
     whiteSpace: "nowrap",
     transition: "color 0.15s",
-  },
+  } as React.CSSProperties,
 };

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Loader2, ArrowRight, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowRight, Mail, Lock, ChefHat, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
@@ -42,12 +42,12 @@ export default function RegisterPage() {
       <div style={styles.blob2} />
       <div style={styles.leftContent}>
         <a href="/" style={styles.brandLink}>
-          <span style={styles.brandIcon}>🥟</span>
+          <ChefHat size={20} color="#7a1a0e" strokeWidth={2.5} />
           <span style={styles.brandName}>DimsumStore</span>
         </a>
         <div style={styles.illustrationRing}>
           <div style={styles.illustrationInner}>
-            <span style={styles.dimsumEmoji}>🥟</span>
+            <ChefHat size={42} color="#c0392b" strokeWidth={1.75} />
           </div>
         </div>
         <p style={styles.tagline}>
@@ -66,7 +66,9 @@ export default function RegisterPage() {
         <div style={styles.card}>
           {LeftPanel}
           <div style={{ ...styles.rightPanel, alignItems: "center", justifyContent: "center", textAlign: "center", gap: "1.25rem" }}>
-            <div style={{ fontSize: "3.5rem" }}>📧</div>
+            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Mail size={32} color="#c0392b" strokeWidth={1.75} />
+            </div>
             <div>
               <h2 style={{ ...styles.welcomeTitle, fontSize: "1.3rem" }}>Cek Email Kamu!</h2>
               <p style={{ fontSize: "0.82rem", color: "#999", lineHeight: 1.7, marginTop: "0.35rem" }}>
@@ -93,7 +95,7 @@ export default function RegisterPage() {
         {/* ── Right Panel ── */}
         <div style={styles.rightPanel}>
           <div style={styles.formHeader}>
-            <h1 style={styles.welcomeTitle}>Buat Akun Baru! ✨</h1>
+            <h1 style={styles.welcomeTitle}>Buat Akun Baru</h1>
             <p style={styles.welcomeSub}>Isi detail kamu untuk mendaftar.</p>
           </div>
 
